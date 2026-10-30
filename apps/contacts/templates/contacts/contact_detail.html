@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ contact }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Contacts</a></li><li class="breadcrumb-item active" aria-current="page">{{ contact }}</li></ol></nav>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ contact.full_name }}</h1>
+    {% include "contacts/status_badge.html" with status=contact.status label=contact.get_status_display %}
+    {% if contact.status_since %}<span class="text-body-secondary small">since {{ contact.status_since|date:"d M Y" }}</span>{% endif %}
+    {% if contact.review_date %}<span class="text-body-secondary small">· review {{ contact.review_date|date:"d M Y" }}</span>{% endif %}
+  </div>
+  <a class="btn btn-outline-primary" href="{% url 'contacts:edit' contact.pk %}">Edit details</a>
+</div>
+
+{% if duplicates %}
+<div class="alert alert-warning">Possible duplicates (shared phone):
+  {% for d in duplicates %}<a href="{% url 'contacts:detail' d.pk %}">{{ d.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+  These are not merged automatically.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-5">Phone</dt><dd class="col-7"><a href="tel:{{ contact.phone_primary }}">{{ contact.phone_display }}</a></dd>
+        {% if contact.phone_secondary %}<dt class="col-5">Secondary</dt><dd class="col-7"><a href="tel:{{ contact.phone_secondary }}">{{ contact.phone_secondary_display }}</a></dd>{% endif %}
+        <dt class="col-5">Area</dt><dd class="col-7">{{ contact.area }}</dd>
+        <dt class="col-5">Registered at stall</dt><dd class="col-7">{{ contact.registration_date|date:"d M Y" }}</dd>
+        <dt class="col-5">Qualification</dt><dd class="col-7">{{ contact.qualification|default:"—" }}</dd>
+        <dt class="col-5">Collected by</dt><dd class="col-7">{{ contact.collected_by_name|default:"—" }}</dd>
+        <dt class="col-5">Notes</dt><dd class="col-7">{{ contact.notes|default:"—"|linebreaksbr }}</dd>
+        {% if contact.legacy_data.import %}<dt class="col-5">Imported</dt><dd class="col-7"><a href="{% url 'imports:detail' contact.legacy_data.import.batch %}">Batch #{{ contact.legacy_data.import.batch }}</a>, row {{ contact.legacy_data.import.row }}</dd>{% endif %}
+      </dl>
+    </div></div>
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Caller allocation</div>
+      <div class="card-body">
+        <p class="mb-2">Current caller: <strong>{{ current.caller|default:"Unallocated" }}</strong>{% if current %} since {{ current.effective_from|date:"d M Y" }}{% endif %}</p>
+        {% if contact.status != "do_not_call" and contact.status != "inactive" %}
+        <form method="post" action="{% url 'contacts:reassign' contact.pk %}" class="row g-2" novalidate>
+          {% csrf_token %}
+          {% with form=reassign_form %}
+            {% if form.non_field_errors %}<div class="col-12 text-danger small">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="col-12 col-md-6"><label class="form-label small" for="{{ form.caller.id_for_label }}">{% if current %}Reassign to{% else %}Allocate to{% endif %}</label>{{ form.caller }}{% for e in form.caller.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+            <div class="col-12 col-md-6"><label class="form-label small" for="{{ form.effective_date.id_for_label }}">Effective date</label>{{ form.effective_date }}{% for e in form.effective_date.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+            <div class="col-12"><label class="form-label small" for="{{ form.reason.id_for_label }}">Reason</label>{{ form.reason }}{% for e in form.reason.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+          {% endwith %}
+          <div class="col-12"><button class="btn btn-primary">Save allocation</button></div>
+        </form>
+        {% else %}<p class="text-body-secondary small mb-0">Reactivate the contact to allocate a caller.</p>{% endif %}
+      </div>
+      <ul class="list-group list-group-flush small">
+        {% for a in allocations %}
+        <li class="list-group-item">
+          <strong>{{ a.caller }}</strong> · {{ a.effective_from|date:"d M Y" }} → {% if a.effective_to %}{{ a.last_day|date:"d M Y" }}{% else %}now{% endif %}
+          <span class="text-body-secondary">· {{ a.get_change_type_display }}{% if a.cycle %} · {{ a.cycle }}{% endif %} · by {{ a.created_by|default:"system" }}{% if a.reason %} · {{ a.reason }}{% endif %}</span>
+        </li>
+        {% empty %}<li class="list-group-item text-body-secondary">No allocation history.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Change status</div>
+      <div class="card-body">
+        <form method="post" action="{% url 'contacts:status' contact.pk %}" novalidate>
+          {% csrf_token %}
+          {% include "includes/form_fields.html" with form=status_form %}
+          <button class="btn btn-warning">Change status</button>
+        </form>
+        <p class="small text-body-secondary mt-2 mb-0">Inactive and Do not call end the caller allocation and withdraw unattempted calls; attempted calls and all history are kept.</p>
+      </div>
+      <ul class="list-group list-group-flush small">
+        {% for h in history %}
+        <li class="list-group-item">
+          {{ h.effective_date|date:"d M Y" }} · {% if h.from_status %}{{ h.get_from_status_display }} → {% endif %}<strong>{{ h.get_to_status_display }}</strong>
+          <span class="text-body-secondary">· {{ h.get_reason_category_display }}{% if h.reason_text %}: {{ h.reason_text }}{% endif %} · by {{ h.changed_by|default:"system" }} ({{ h.changed_at|date:"d M Y H:i" }})</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header fw-semibold">Calling history</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Congregation</th><th>Caller</th><th>Result</th><th>Attempts</th></tr></thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td><a href="{% url 'calling:task_detail' t.pk %}">{{ t.session.label }}</a></td>
+          <td>{{ t.caller }}</td>
+          <td>{% if t.status == "withdrawn" %}<span class="text-body-secondary">Withdrawn: {{ t.withdrawn_reason }}</span>{% else %}{{ t.get_latest_outcome_display|default:"Not attempted" }}{% endif %}</td>
+          <td class="small">{% for a in t.attempts.all %}{{ a.attempted_at|date:"d M H:i" }} {{ a.get_outcome_display }}{% if a.notes %} — {{ a.notes }}{% endif %}<br>{% empty %}—{% endfor %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="text-body-secondary">No calls yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

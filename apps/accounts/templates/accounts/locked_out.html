@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Too many attempts{% endblock %}
+{% block content %}
+<div class="card auth-card shadow-sm">
+  <div class="card-body p-4">
+    <h1 class="h4 mb-3">Too many login attempts</h1>
+    <p class="mb-0">This account is temporarily locked after repeated failed logins. Try again in an hour,
+      or ask your system administrator to unlock it.</p>
+  </div>
+</div>
+{% endblock %}

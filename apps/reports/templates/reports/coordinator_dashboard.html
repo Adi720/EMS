@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Coordinator dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Coordinator dashboard</h1>
+  <a class="btn btn-outline-primary" href="{% url 'contacts:create' %}">Add contact</a>
+</div>
+
+<div class="card border-primary mb-3">
+  <div class="card-body">
+    {% if week_session and week_session.is_open %}
+      <p class="mb-1 fs-5">✅ Calling is open for <strong>{{ week_session }}</strong></p>
+      <p class="mb-2 small text-body-secondary">Callers can see their lists under My calls. Progress is shown below. <a href="{% url 'calling:session_detail' week_session.pk %}">Full call list &amp; exports</a></p>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <a class="btn btn-success" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Share reminder on WhatsApp</a>
+        <button type="button" class="btn btn-outline-secondary" id="copy-reminder">Copy message</button>
+        <span class="small text-body-secondary" id="copy-status" aria-live="polite"></span>
+      </div>
+      <textarea class="form-control form-control-sm mt-2" id="reminder-text" rows="3" readonly aria-label="Reminder message">{{ whatsapp_message }}</textarea>
+      <script>
+        document.getElementById("copy-reminder").addEventListener("click", function () {
+          var box = document.getElementById("reminder-text");
+          box.select();
+          var done = function () { document.getElementById("copy-status").textContent = "Copied"; };
+          if (navigator.clipboard) { navigator.clipboard.writeText(box.value).then(done, function () { document.execCommand("copy"); done(); }); }
+          else { document.execCommand("copy"); done(); }
+        });
+      </script>
+    {% elif week_session and week_session.status == "closed" %}
+      <p class="mb-0">Calling for <strong>{{ week_session }}</strong> is closed. <a href="{% url 'calling:session_detail' week_session.pk %}">Open its page</a> to reopen it.</p>
+    {% else %}
+      <form method="post" action="{% url 'calling:start_week' %}" class="d-flex flex-wrap align-items-center gap-3">
+        {% csrf_token %}
+        <button class="btn btn-success btn-lg">Start calling for {{ week_label }}</button>
+        <span class="small text-body-secondary">Builds every caller's list from their allocated contacts{% if older_open %} and closes calling for {% for s in older_open %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}.</span>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if rotation_due %}<div class="alert alert-warning">Allocation cycle <strong>{{ rotation_due }}</strong> ends {{ rotation_due.planned_end_date|date:"d M Y" }} — time to <a href="{% url 'allocations:home' %}">rotate the caller lists</a>.</div>{% endif %}
+{% if unallocated_count %}<div class="alert alert-warning">{{ unallocated_count }} active contact(s) have no caller and will not be called. <a href="{% url 'allocations:change' %}?caller=none">Allocate them</a>.</div>{% endif %}
+{% if review_due %}<div class="alert alert-info">Temporarily unavailable contacts due for review: {% for c in review_due %}<a href="{% url 'contacts:detail' c.pk %}">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</div>{% endif %}
+
+{% if sessions %}
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-12 col-md-5">
+    <label class="form-label small" for="session">Congregation</label>
+    <select class="form-select" id="session" name="session">{% for s in sessions %}<option value="{{ s.pk }}" {% if s == session %}selected{% endif %}>{{ s }} — {{ s.get_status_display }}</option>{% endfor %}</select>
+  </div>
+  <div class="col-12 col-md-4">
+    <label class="form-label small" for="caller">Caller</label>
+    <select class="form-select" id="caller" name="caller"><option value="">All callers</option>{% for c in callers %}<option value="{{ c.pk }}" {% if selected_caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  </div>
+  <input type="hidden" name="from" value="{{ date_from }}"><input type="hidden" name="to" value="{{ date_to }}">
+  <div class="col-12 col-md-3"><button class="btn btn-secondary w-100">Show</button></div>
+</form>
+{% endif %}
+
+{% if session %}
+  <div class="d-flex justify-content-between align-items-center"><h2 class="h5">{{ session }} <span class="badge text-bg-secondary fs-6 align-middle">{{ session.get_status_display }}</span></h2><a class="small" href="{% url 'calling:session_detail' session.pk %}">Details &amp; exports</a></div>
+  {% include "includes/metric_tiles.html" %}
+  {% if withdrawn_count %}<p class="small text-body-secondary">{{ withdrawn_count }} withdrawn call(s) not counted.</p>{% endif %}
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Progress by caller</div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 table-metrics">
+        <thead><tr><th>Caller</th>{% include "includes/metric_headers.html" %}</tr></thead>
+        <tbody>
+          {% for row in by_caller %}<tr><td><a href="{% url 'calling:session_detail' session.pk %}?caller={{ row.caller }}">{{ row.caller_obj }}</a></td>{% include "includes/metric_cells.html" %}</tr>
+          {% empty %}<tr><td colspan="10" class="text-body-secondary">{% if session.status == "draft" %}Calling has not started for this congregation yet.{% else %}No calls.{% endif %}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if history %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-12 col-md-4 fw-semibold">Previous congregations{% if selected_caller %} (selected caller){% endif %}</div>
+      <input type="hidden" name="session" value="{{ session.pk|default:'' }}"><input type="hidden" name="caller" value="{{ selected_caller }}">
+      <div class="col-5 col-md-3"><label class="form-label small" for="from">From</label><input class="form-control form-control-sm" type="date" id="from" name="from" value="{{ date_from }}"></div>
+      <div class="col-5 col-md-3"><label class="form-label small" for="to">To</label><input class="form-control form-control-sm" type="date" id="to" name="to" value="{{ date_to }}"></div>
+      <div class="col-2 col-md-2"><button class="btn btn-sm btn-secondary w-100">Go</button></div>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 table-metrics">
+      <thead><tr><th>Congregation</th>{% include "includes/metric_headers.html" %}</tr></thead>
+      <tbody>
+        {% for row in history %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj.label }}</a></td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+<p class="small text-body-secondary mt-2">Completed = at least one attempt (any outcome). Connected = Yes, Not Possible or Will Try. Unknown = not attempted or Call Not Connected. Will Try is never counted as Yes. Actual attendance is not tracked.</p>
+{% endblock %}

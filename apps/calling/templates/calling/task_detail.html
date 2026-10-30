@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ contact }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+  {% if request.user == task.caller %}<li class="breadcrumb-item"><a href="{% url 'core:caller_dashboard' %}?session={{ task.session_id }}">My calls</a></li>
+  {% else %}<li class="breadcrumb-item"><a href="{% url 'calling:session_detail' task.session_id %}">{{ task.session }}</a></li>{% endif %}
+  <li class="breadcrumb-item active" aria-current="page">{{ contact }}</li>
+</ol></nav>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-body">
+      <h1 class="h4">{{ contact.full_name }}</h1>
+      <p class="mb-1">{{ contact.area }}</p>
+      <p class="small text-body-secondary mb-2">{{ task.session }} · caller {{ task.caller }}</p>
+      {% if contact.is_do_not_call %}
+        <div class="alert alert-danger mb-0">Do not call — this person asked not to be contacted.</div>
+      {% else %}
+        <a class="btn btn-outline-primary w-100" href="tel:{{ contact.phone_primary }}">📞 Call {{ contact.phone_display }}</a>
+        {% if contact.phone_secondary %}<a class="btn btn-link w-100" href="tel:{{ contact.phone_secondary }}">Alternate: {{ contact.phone_secondary_display }}</a>{% endif %}
+      {% endif %}
+      {% if task.status == "withdrawn" %}<div class="alert alert-secondary mt-2 mb-0">Withdrawn: {{ task.withdrawn_reason }}</div>{% endif %}
+      {% if request.user.is_coordinator %}<a class="small d-block mt-2" href="{% url 'contacts:detail' contact.pk %}">Full contact record</a>{% endif %}
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    {% if can_record %}
+    <form method="post" class="card card-body mb-3" novalidate>
+      {% csrf_token %}
+      <h2 class="h5">Record a call attempt</h2>
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+      <fieldset class="mb-3">
+        <legend class="form-label fs-6">Outcome *</legend>
+        {% for choice in form.outcome %}
+          <div class="form-check py-1">{{ choice.tag }} <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label></div>
+        {% endfor %}
+        {% for e in form.outcome.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </fieldset>
+      <div class="mb-3"><label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>{{ form.notes }}{% for e in form.notes.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <div class="mb-3"><label class="form-label" for="{{ form.callback_at.id_for_label }}">{{ form.callback_at.label }}</label>{{ form.callback_at }}{% for e in form.callback_at.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+      <button class="btn btn-primary btn-lg">Save attempt</button>
+    </form>
+    {% elif task.session.status != "open" %}
+      <div class="alert alert-secondary">Calling is not open for {{ task.session }}; attempts cannot be recorded.</div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Attempts for this congregation ({{ attempts|length }})</div>
+      <ul class="list-group list-group-flush">
+        {% for a in attempts %}
+        <li class="list-group-item">
+          <strong>{{ a.get_outcome_display }}</strong> <span class="small text-body-secondary">· {{ a.attempted_at|date:"D d M H:i" }} · {{ a.recorded_by }}{% if forloop.first %} · current{% endif %}</span>
+          {% if a.notes %}<div class="small">{{ a.notes|linebreaksbr }}</div>{% endif %}
+          {% if a.callback_at %}<div class="small">Call back {{ a.callback_at|date:"D d M H:i" }}</div>{% endif %}
+        </li>
+        {% empty %}<li class="list-group-item text-body-secondary">Not attempted yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% if previous %}
+    <div class="card">
+      <div class="card-header fw-semibold">Earlier congregations</div>
+      <ul class="list-group list-group-flush small">
+        {% for p in previous %}<li class="list-group-item">{{ p.session.label }}: {{ p.get_latest_outcome_display }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

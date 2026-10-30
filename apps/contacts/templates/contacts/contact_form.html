@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{% if contact %}Edit {{ contact }}{% else %}Add contact{% endif %}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <h1 class="h3 mb-3">{% if contact %}Edit {{ contact }}{% else %}Add contact{% endif %}</h1>
+    {% if form.duplicates %}
+      <div class="alert alert-warning">
+        <strong>Possible duplicates</strong> (same phone number):
+        <ul class="mb-0">{% for d in form.duplicates %}<li><a href="{% url 'contacts:detail' d.pk %}" target="_blank" rel="noopener">{{ d.full_name }}</a> — {{ d.area }} ({{ d.get_status_display }})</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+    <form method="post" class="card card-body" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{% if contact %}{% url 'contacts:detail' contact.pk %}{% else %}{% url 'contacts:list' %}{% endif %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+[project]
+name = "ems-seva"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["apps"]
+addopts = "--strict-markers"
+# WhiteNoise warns that STATIC_ROOT is missing until collectstatic has run.
+filterwarnings = ["ignore:No directory at:UserWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ", "S"]
+# S101: assert is fine in tests. E501: line length is handled by `ruff format`
+# (long user-facing message strings are left intact).
+ignore = ["S101", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S105", "S106"]  # hard-coded test passwords
+"conftest.py" = ["S105"]
+"apps/imports/synthetic.py" = ["S311"]  # fake data, not cryptography
+"config/settings/test.py" = ["S105"]

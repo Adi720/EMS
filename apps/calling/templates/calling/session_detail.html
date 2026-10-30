@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{{ session }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'calling:session_list' %}">Congregations</a></li><li class="breadcrumb-item active">{{ session.label }}</li></ol></nav>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h3 mb-1">{{ session }}</h1>
+    <span class="badge text-bg-{% if session.status == 'open' %}success{% elif session.status == 'draft' %}info{% else %}secondary{% endif %}">{{ session.get_status_display }}</span>
+    {% if session.notes %}<div class="small text-body-secondary mt-1">{{ session.notes }}</div>{% endif %}
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% if session.status == "draft" %}
+      <form method="post" action="{% url 'calling:session_action' session.pk 'open' %}">{% csrf_token %}<button class="btn btn-success">Start calling</button></form>
+    {% elif session.status == "open" %}
+      <form method="post" action="{% url 'calling:session_action' session.pk 'refresh' %}">{% csrf_token %}<button class="btn btn-outline-primary">Refresh call lists</button></form>
+      <form method="post" action="{% url 'calling:session_action' session.pk 'close' %}" onsubmit="return confirm('Close calling for this congregation? Callers will no longer be able to record attempts.');">{% csrf_token %}<button class="btn btn-outline-danger">Close calling</button></form>
+    {% else %}
+      <form method="post" action="{% url 'calling:session_action' session.pk 'open' %}" onsubmit="return confirm('Reopen calling for this congregation?');">{% csrf_token %}<button class="btn btn-outline-secondary">Reopen calling</button></form>
+    {% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'calling:session_edit' session.pk %}">Edit</a>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'reports:session_export' session.pk %}?kind=summary&amp;format=xlsx">Per-caller summary (Excel)</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:session_export' session.pk %}?kind=summary&amp;format=csv">Per-caller summary (CSV)</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:session_export' session.pk %}?kind=tasks&amp;format=xlsx">Call list with outcomes (Excel)</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:session_export' session.pk %}?kind=tasks&amp;format=csv">Call list with outcomes (CSV)</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if session.status == "draft" %}<div class="alert alert-info">Starting calling builds each caller's list: one call for every Active contact allocated to them on {{ session.session_date|date:"d M Y" }}.</div>{% endif %}
+
+{% include "includes/metric_tiles.html" %}
+{% if withdrawn_count %}<p class="small text-body-secondary">{{ withdrawn_count }} call(s) withdrawn (contact made inactive / do not call or unallocated before being called) — not counted as assigned.</p>{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">By caller</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 table-metrics">
+          <thead><tr><th>Caller</th>{% include "includes/metric_headers.html" %}</tr></thead>
+          <tbody>
+            {% for row in by_caller %}<tr><td><a href="?caller={{ row.caller }}">{{ row.caller_obj }}</a></td>{% include "includes/metric_cells.html" %}</tr>
+            {% empty %}<tr><td colspan="10" class="text-body-secondary">No calls.</td></tr>{% endfor %}
+          </tbody>
+          {% if by_caller %}<tfoot><tr class="fw-semibold"><td>Total</td>{% include "includes/metric_cells.html" with row=summary %}</tr></tfoot>{% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">By area</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 table-metrics">
+          <thead><tr><th>Area</th><th class="text-end">Assigned</th><th class="text-end">Completed</th><th class="text-end">Yes</th><th class="text-end">Will Try</th></tr></thead>
+          <tbody>{% for row in by_area %}<tr><td>{{ row.contact__area }}</td><td class="text-end">{{ row.assigned }}</td><td class="text-end">{{ row.completed }}</td><td class="text-end">{{ row.yes }}</td><td class="text-end">{{ row.will_try }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto fw-semibold">Calls</div>
+      <div class="col-6 col-md-3">
+        <select class="form-select form-select-sm" name="caller" aria-label="Caller"><option value="">All callers</option>{% for c in callers %}<option value="{{ c.pk }}" {% if selected_caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+      </div>
+      <div class="col-6 col-md-3">
+        <select class="form-select form-select-sm" name="show" aria-label="Show">
+          <option value="">All</option>
+          <option value="pending" {% if show == "pending" %}selected{% endif %}>Not attempted</option>
+          <option value="completed" {% if show == "completed" %}selected{% endif %}>Completed</option>
+          <option value="yes" {% if show == "yes" %}selected{% endif %}>Yes</option>
+          <option value="not_possible" {% if show == "not_possible" %}selected{% endif %}>Not Possible</option>
+          <option value="will_try" {% if show == "will_try" %}selected{% endif %}>Will Try</option>
+          <option value="unknown" {% if show == "unknown" %}selected{% endif %}>Unknown</option>
+          <option value="callback" {% if show == "callback" %}selected{% endif %}>Call back</option>
+          <option value="withdrawn" {% if show == "withdrawn" %}selected{% endif %}>Withdrawn</option>
+        </select>
+      </div>
+      <div class="col-auto"><button class="btn btn-sm btn-secondary">Filter</button></div>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Contact</th><th>Area</th><th>Caller</th><th>Latest outcome</th><th class="text-end">Attempts</th><th>Last attempt</th></tr></thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr class="{% if t.status == 'withdrawn' %}text-body-secondary{% endif %}">
+          <td><a href="{% url 'calling:task_detail' t.pk %}">{{ t.contact.full_name }}</a></td>
+          <td>{{ t.contact.area }}</td>
+          <td>{{ t.caller }}</td>
+          <td>{% if t.status == "withdrawn" %}Withdrawn — {{ t.withdrawn_reason }}{% else %}{{ t.get_latest_outcome_display|default:"Not attempted" }}{% endif %}</td>
+          <td class="text-end">{{ t.attempt_count }}</td>
+          <td>{{ t.last_attempt_at|date:"D d M H:i"|default:"—" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="text-body-secondary">{% if session.status == "draft" %}Start calling to build the call lists.{% else %}No calls match.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

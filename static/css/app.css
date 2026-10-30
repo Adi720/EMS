@@ -1,0 +1,53 @@
+/* Application styles on top of Bootstrap. Keep touch targets large for phone use. */
+
+.btn,
+.form-control,
+.form-select {
+  min-height: 44px;
+}
+
+.btn-sm {
+  min-height: 38px;
+}
+
+.auth-card {
+  max-width: 420px;
+  margin: 2rem auto;
+}
+
+.stat-tile .stat-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.outcome-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+@media (min-width: 768px) {
+  .outcome-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.outcome-buttons form,
+.outcome-buttons .btn {
+  width: 100%;
+}
+
+.task-card:target {
+  outline: 3px solid var(--bs-primary);
+}
+
+.table-metrics td,
+.table-metrics th {
+  white-space: nowrap;
+}
+
+.raw-values td:first-child {
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+}

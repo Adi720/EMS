@@ -1,0 +1,31 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Real contact data must never be committed
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.ods
+data/
+imports/uploads/
+media/
+backups/
+*.sql
+*.dump
+
+# Python / tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+staticfiles/
+*.sqlite3
+.vscode/
+.idea/

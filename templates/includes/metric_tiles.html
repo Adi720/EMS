@@ -1,0 +1,11 @@
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Assigned</div><div class="stat-value">{{ summary.assigned }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Completed (attempted)</div><div class="stat-value">{{ summary.completed }}{% if summary.completion_rate is not None %} <span class="fs-6 text-body-secondary">{{ summary.completion_rate }}%</span>{% endif %}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Not yet attempted</div><div class="stat-value">{{ summary.not_attempted }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Connected</div><div class="stat-value">{{ summary.connected }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100 border-success"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Yes</div><div class="stat-value text-success">{{ summary.yes }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Not Possible</div><div class="stat-value">{{ summary.not_possible }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Will Try <span class="visually-hidden">(not confirmed)</span></div><div class="stat-value">{{ summary.will_try }}</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Unknown</div><div class="stat-value">{{ summary.unknown }}</div></div></div></div>
+</div>
+{% if not summary.reconciles %}<div class="alert alert-danger">Outcome counts do not add up to Assigned — please report this.</div>{% endif %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Upload workbook{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-6">
+  <h1 class="h3">Upload workbook</h1>
+  <p class="text-body-secondary">The file is read into a staging area. You will map columns, review every row and confirm the allocation cycle before anything is imported.</p>
+  <form method="post" enctype="multipart/form-data" class="card card-body" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <button class="btn btn-primary">Upload and stage</button>
+  </form>
+</div></div>
+{% endblock %}

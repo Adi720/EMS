@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}New allocation cycle{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-6">
+  <h1 class="h3">New allocation cycle</h1>
+  <p class="text-body-secondary">Cycles normally last about three months. After creating the cycle you will plan the rotation (swaps, whole-list moves or a rotation), which is previewed before it is applied.</p>
+  <form method="post" class="card card-body" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <div class="d-flex gap-2"><button class="btn btn-primary">Create cycle</button><a class="btn btn-outline-secondary" href="{% url 'allocations:home' %}">Cancel</a></div>
+  </form>
+</div></div>
+{% endblock %}

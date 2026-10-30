@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Monthly report{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Monthly report — {{ month_start|date:"F Y" }}</h1>
+  <form method="get" class="d-flex gap-2">
+    <label class="visually-hidden" for="month">Month</label>
+    <input class="form-control" type="month" id="month" name="month" value="{{ month_value }}">
+    <button class="btn btn-secondary">Show</button>
+  </form>
+</div>
+<p>{{ session_count }} congregation(s) · {{ unique_yes }} unique contact(s) said Yes. <a href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=xlsx">Export Excel</a> · <a href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=csv">CSV</a></p>
+{% include "includes/metric_tiles.html" %}
+<div class="card mb-3">
+  <div class="card-header fw-semibold">By congregation</div>
+  <div class="table-responsive"><table class="table table-sm mb-0 table-metrics">
+    <thead><tr><th>Congregation</th>{% include "includes/metric_headers.html" %}</tr></thead>
+    <tbody>{% for row in by_session %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj }}</a></td>{% include "includes/metric_cells.html" %}</tr>{% empty %}<tr><td colspan="10" class="text-body-secondary">No calling in this month.</td></tr>{% endfor %}</tbody>
+    {% if by_session %}<tfoot><tr class="fw-semibold"><td>Total</td>{% include "includes/metric_cells.html" with row=summary %}</tr></tfoot>{% endif %}
+  </table></div>
+</div>
+<div class="card">
+  <div class="card-header fw-semibold">By caller (all congregations in the month)</div>
+  <div class="table-responsive"><table class="table table-sm mb-0 table-metrics">
+    <thead><tr><th>Caller</th>{% include "includes/metric_headers.html" %}</tr></thead>
+    <tbody>{% for row in by_caller %}<tr><td>{{ row.caller_obj }}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+<p class="small text-body-secondary mt-2">Monthly totals add up each congregation; a contact called for several congregations is counted once per congregation.</p>
+{% endblock %}

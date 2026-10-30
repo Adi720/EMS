@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}EMS Congregations{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">EMS Congregations</h1>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}<button class="btn btn-success">Start calling for this Sunday</button></form>
+    <a class="btn btn-outline-secondary" href="{% url 'calling:session_create' %}">Add another date</a>
+  </div>
+</div>
+{% if object_list %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-body table-metrics">
+    <thead><tr><th>Congregation</th><th>Calling</th>{% include "includes/metric_headers.html" %}</tr></thead>
+    <tbody>
+      {% for s in object_list %}
+      <tr>
+        <td><a href="{% url 'calling:session_detail' s.pk %}">{{ s }}</a></td>
+        <td><span class="badge text-bg-{% if s.status == 'open' %}success{% elif s.status == 'draft' %}info{% else %}secondary{% endif %}">{{ s.get_status_display }}</span></td>
+        {% if s.summary %}{% include "includes/metric_cells.html" with row=s.summary %}{% else %}<td colspan="9" class="text-body-secondary">No calls yet</td>{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% else %}
+<div class="alert alert-secondary">No congregations yet. Click <strong>Start calling for this Sunday</strong> to create this week's call lists.</div>
+{% endif %}
+{% endblock %}

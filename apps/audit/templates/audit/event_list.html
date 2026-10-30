@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Audit log</h1>
+  <form method="get" class="d-flex gap-2">
+    <label class="visually-hidden" for="action">Action</label>
+    <select class="form-select" id="action" name="action"><option value="">All actions</option>{% for a in actions %}<option value="{{ a }}" {% if a == selected_action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+    <button class="btn btn-secondary">Filter</button>
+  </form>
+</div>
+<div class="table-responsive">
+  <table class="table table-sm bg-body">
+    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Summary</th></tr></thead>
+    <tbody>
+      {% for e in object_list %}<tr><td class="text-nowrap">{{ e.created_at|date:"d M Y H:i" }}</td><td>{{ e.actor|default:"system" }}</td><td><code>{{ e.action }}</code></td><td>{{ e.summary }}</td></tr>
+      {% empty %}<tr><td colspan="4" class="text-body-secondary">No events.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% with querystring="action="|add:selected_action %}{% include "includes/pagination.html" %}{% endwith %}
+{% endblock %}

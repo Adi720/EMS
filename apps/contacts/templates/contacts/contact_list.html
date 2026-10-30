@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Contacts{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Contacts <span class="text-body-secondary fs-6">({{ total }})</span></h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary" href="{% url 'contacts:create' %}">Add contact</a>
+    <div class="dropdown">
+      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=csv">CSV</a></li>
+        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx">Excel</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item small" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx&amp;include_dnc=1">Excel incl. Do not call</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<form method="get" class="row g-2 mb-3" role="search">
+  <div class="col-12 col-md-4">
+    <label class="visually-hidden" for="q">Search</label>
+    <input class="form-control" id="q" name="q" value="{{ filter_form.data.q|default:'' }}" placeholder="Name, phone or area">
+  </div>
+  <div class="col-6 col-md-2">
+    <label class="visually-hidden" for="status">Status</label>
+    <select class="form-select" id="status" name="status">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}<option value="{{ value }}" {% if filter_form.data.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-6 col-md-2">
+    <label class="visually-hidden" for="area">Area</label>
+    <input class="form-control" id="area" name="area" value="{{ filter_form.data.area|default:'' }}" placeholder="Area">
+  </div>
+  <div class="col-8 col-md-3">
+    <label class="visually-hidden" for="caller">Caller</label>
+    <select class="form-select" id="caller" name="caller">
+      <option value="">All callers</option>
+      <option value="none" {% if filter_form.data.caller == "none" %}selected{% endif %}>Unallocated</option>
+      {% for c in callers %}<option value="{{ c.pk }}" {% if filter_form.data.caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-4 col-md-1"><button class="btn btn-secondary w-100">Filter</button></div>
+</form>
+
+{% if object_list %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-body">
+    <thead><tr><th>Name</th><th>Phone</th><th>Area</th><th>Caller</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for c in object_list %}
+      <tr>
+        <td><a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a></td>
+        <td class="text-nowrap">{{ c.phone_display }}</td>
+        <td>{{ c.area }}</td>
+        <td>{{ c.caller_label|default:"—" }}</td>
+        <td>{% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "includes/pagination.html" %}
+{% else %}
+<div class="alert alert-secondary">No contacts match. {% if not querystring %}<a href="{% url 'contacts:create' %}">Add the first contact</a> or <a href="{% url 'imports:upload' %}">import the workbook</a>.{% endif %}</div>
+{% endif %}
+{% endblock %}

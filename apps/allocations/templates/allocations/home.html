@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Allocations{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Allocations</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <a class="btn btn-primary" href="{% url 'allocations:change' %}">Assign / move contacts</a>
+    <a class="btn btn-outline-primary" href="{% url 'allocations:change' %}?kind=swap">Swap lists</a>
+    <details class="small">
+      <summary>Advanced</summary>
+      <a href="{% url 'allocations:change' %}?kind=rotate">Rotate among several callers</a> ·
+      <a href="{% url 'allocations:cycle_create' %}">Start a new allocation cycle</a>
+    </details>
+  </div>
+</div>
+
+{% if rotation_due %}
+<div class="alert alert-warning">Cycle <strong>{{ rotation_due }}</strong> is planned to end on {{ rotation_due.planned_end_date|date:"d M Y" }}. Time to rotate: use <a href="{% url 'allocations:change' %}?kind=swap">Swap lists</a> (or start a new cycle under Advanced).</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Current lists</div>
+      <ul class="list-group list-group-flush">
+        {% for user, count in caller_counts %}
+        <li class="list-group-item d-flex justify-content-between">
+          <a href="{% url 'contacts:list' %}?caller={{ user.pk }}">{{ user }}</a>
+          <span class="badge text-bg-primary rounded-pill">{{ count }}</span>
+        </li>
+        {% empty %}<li class="list-group-item text-body-secondary">No callers yet. Give users the Caller role in Django Admin.</li>
+        {% endfor %}
+        <li class="list-group-item d-flex justify-content-between">
+          <a href="{% url 'contacts:list' %}?caller=none&amp;status=active">Active contacts without a caller</a>
+          <span class="badge {% if unallocated %}text-bg-danger{% else %}text-bg-secondary{% endif %} rounded-pill">{{ unallocated|length }}</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Cycles</div>
+      <ul class="list-group list-group-flush small">
+        {% for c in cycles %}
+        <li class="list-group-item"><strong>{{ c.name }}</strong> · {{ c.start_date|date:"d M Y" }} – {{ c.planned_end_date|date:"d M Y" }} <span class="badge text-bg-{% if c.status == 'active' %}success{% elif c.status == 'planned' %}info{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></li>
+        {% empty %}<li class="list-group-item text-body-secondary">No cycles yet. The first is usually created during the initial import.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header fw-semibold">Recent allocation changes</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>When</th><th>Change</th><th>Effective</th><th class="text-end">Contacts</th><th>By</th></tr></thead>
+          <tbody>
+            {% for op in operations %}
+            <tr>
+              <td><a href="{% url 'allocations:operation' op.pk %}">{{ op.performed_at|date:"d M Y H:i" }}</a></td>
+              <td>{{ op.get_kind_display }}{% if op.reason %}<div class="small text-body-secondary">{{ op.reason|truncatechars:60 }}</div>{% endif %}</td>
+              <td>{{ op.effective_date|date:"d M Y" }}</td>
+              <td class="text-end">{{ op.change_count }}</td>
+              <td>{{ op.performed_by }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="5" class="text-body-secondary">No changes yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
