@@ -3,6 +3,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.cache import add_never_cache_headers
 from django.views import View
 from django.views.generic import ListView
 
@@ -40,6 +41,7 @@ class UploadView(CoordinatorRequiredMixin, View):
                     request.user,
                     contact_sheet=form.cleaned_data["contact_sheet"],
                     status_sheet=form.cleaned_data["status_sheet"],
+                    use_status_sheet=form.cleaned_data["use_status_sheet"],
                 )
             except (parsing.ParseError, services.ImportProblem) as exc:
                 form.add_error(None, str(exc))
@@ -139,6 +141,7 @@ class BatchDetailView(BatchMixin, View):
             "caller_names": caller_names,
             "callers": callers,
             "status_records": services.status_record_rows(batch),
+            "unmatched_callers": services.unmatched_callers(batch) if batch.is_staged else [],
             "blockers": services.commit_blockers(batch) if batch.is_staged else [],
             "commit_form": commit_form
             or CommitForm(needs_ack=bool(batch.discrepancies), initial={"cycle": batch.cycle}),
@@ -166,6 +169,41 @@ class CallerMappingView(BatchMixin, View):
         else:
             messages.error(request, "; ".join(e for errors in form.errors.values() for e in errors))
         return redirect("imports:detail", pk=pk)
+
+
+class CreateCallersView(BatchMixin, View):
+    """Create Caller-only accounts for unmatched workbook names, then show the passwords once.
+
+    The credentials page is rendered directly (not redirected) and marked no-store, so the
+    plain-text passwords are never saved on the server or in the browser cache.
+    """
+
+    def post(self, request, pk):
+        if response := self.require_staged():
+            return response
+        entries = []
+        for index in request.POST.getlist("create"):
+            name = request.POST.get(f"name_{index}", "")
+            username = request.POST.get(f"username_{index}", "")
+            if name:
+                entries.append((name, username))
+        try:
+            created = services.create_callers_from_workbook(self.batch, entries, request.user)
+        except services.ImportProblem as exc:
+            messages.error(request, f"No accounts were created: {exc}")
+            return redirect("imports:detail", pk=pk)
+        response = render(
+            request,
+            "imports/callers_created.html",
+            {
+                "batch": self.batch,
+                "created": created,
+                "login_url": request.build_absolute_uri(reverse("accounts:login")),
+            },
+        )
+        add_never_cache_headers(response)
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        return response
 
 
 class RowEditView(BatchMixin, View):

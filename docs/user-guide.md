@@ -2,18 +2,27 @@
 
 Each Sunday EMS is called an **EMS Congregation**, shown as e.g. *EMS Congregation (1/11/26)*.
 
-## Once, at the start (system administrator)
+## Once, at the start
 
-1. **Create user accounts** — Django Admin at http://127.0.0.1:8000/admin/ (log in as `admin`)
-   → Users → Add. Give each person their first and last name.
-2. **Give roles** — on the user's page, under Groups, add **Caller** and/or **Coordinator**.
-   One person can have both.
-3. **Bring in the existing contacts** — either
-   - **Import** → Upload the workbook → check the column mapping → fix the rows marked
-     *Needs resolution* → match each caller name to a user → choose the current allocation
-     cycle's start date → tick the confirmations → **Import now**; or
-   - **Contacts → Add contact** one by one, choosing the caller in *Allocate to caller*.
-4. Check **Allocations**: every caller has their list, and "Active contacts without a caller" is 0.
+**Types of user:** *System administrator* (created with `manage.py createsuperuser`; can do
+everything, including Django Admin), *Coordinator* (runs Calling Seva), *Caller* (sees only
+My calls). Saints never log in.
+
+1. **Coordinators** — the system administrator creates them: Django Admin (menu under your
+   name) → Users → Add user → username and password → Save → fill in the name, add the
+   **Coordinator** group → Save. Leave Staff and Superuser unticked.
+2. **Bring in the Saints and callers** — **Import** → **Upload workbook** (leave the optional
+   boxes empty) → check the column mapping → **Validate rows**. On the review page:
+   - **Create caller accounts**: callers in the workbook without an account are listed with a
+     suggested username. Untick any that are just a different spelling of an existing person,
+     then **Create ticked accounts**. The usernames and passwords are shown **once** — copy,
+     print or download them and share each one privately.
+   - Map any remaining caller names, and **Resolve** the rows marked *Needs resolution*
+     (fix, link to an existing Saint, create new, or skip with a reason).
+   - Enter the current 3-month cycle's name and start date, tick the confirmations,
+     **Import now**. Only current Saints and their callers are imported — no old weekly history.
+   - Or add Saints one by one: **Saints → Add Saint**, and callers in **Team → Add caller**.
+3. Check **Assignments**: every caller has their list and "without a caller" is 0.
 
 ## Every week
 

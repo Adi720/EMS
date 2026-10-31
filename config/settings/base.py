@@ -138,6 +138,8 @@ ROTATION_REMINDER_DAYS = env.int("ROTATION_REMINDER_DAYS", default=14)
 IMPORT_MAX_UPLOAD_BYTES = env.int("IMPORT_MAX_UPLOAD_BYTES", default=5 * 1024 * 1024)
 IMPORT_MAX_ROWS = env.int("IMPORT_MAX_ROWS", default=5000)
 FILE_UPLOAD_MAX_MEMORY_SIZE = IMPORT_MAX_UPLOAD_BYTES
+# Length of passwords generated for caller accounts created from the workbook.
+GENERATED_PASSWORD_LENGTH = env.int("GENERATED_PASSWORD_LENGTH", default=10)
 
 # --- Email and weekly reminders --------------------------------------------
 

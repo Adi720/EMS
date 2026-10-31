@@ -4,6 +4,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
+from apps.accounts.models import User
 from apps.accounts.roles import Role
 from apps.allocations.models import Allocation, AllocationCycle, ChangeType
 from apps.allocations.services import create_cycle
@@ -37,7 +38,7 @@ def upload(content, name="2026 EMS DATA (synthetic).xlsx"):
 
 @pytest.fixture
 def staged(workbook, coordinator, synthetic_callers):
-    batch = services.stage_upload(upload(workbook[0]), coordinator)
+    batch = services.stage_upload(upload(workbook[0]), coordinator, use_status_sheet=True)
     batch.mapping_confirmed = True
     batch.save()
     services.validate_batch(batch)
@@ -291,3 +292,119 @@ def test_rejects_non_spreadsheet_upload(client, coordinator):
     assert response.status_code == 200 and response.context["form"].errors
     response = client.post(reverse("imports:upload"), {"file": SimpleUploadedFile("x.xlsx", b"not a zip")})
     assert response.status_code == 200 and "could not be read" in str(response.context["form"].errors)
+
+
+# --- Optional status sheet ---------------------------------------------------------
+
+
+def test_status_sheet_is_ignored_unless_asked_for(workbook, coordinator, synthetic_callers):
+    batch = services.stage_upload(upload(workbook[0]), coordinator)
+    assert batch.status_sheet == "" and batch.caller_records == []
+    batch.mapping_confirmed = True
+    batch.save()
+    services.validate_batch(batch)
+    batch.refresh_from_db()
+    codes_found = {d["code"] for d in batch.discrepancies}
+    assert not codes_found & {
+        "count_mismatch",
+        "no_status_sheet",
+        "status_caller_unmatched",
+        "caller_not_in_status",
+    }
+
+
+def test_asking_for_a_missing_status_sheet_is_a_clear_error(coordinator):
+    content = "NAME,MOBILE NO,AREA,DATE\nCsv Person,9876543210,Old Town,05/01/2026\n"
+    with pytest.raises(services.ImportProblem, match="status"):
+        services.stage_upload(upload(content.encode(), "contacts.csv"), coordinator, use_status_sheet=True)
+
+
+# --- Caller accounts from the workbook ---------------------------------------------
+
+
+@pytest.fixture
+def staged_without_callers(workbook, coordinator):
+    batch = services.stage_upload(upload(workbook[0]), coordinator)
+    batch.mapping_confirmed = True
+    batch.save()
+    services.validate_batch(batch)
+    return batch
+
+
+def test_unmatched_callers_are_listed_with_usernames(staged_without_callers, make_user):
+    make_user("synth.existing", ["Caller"], first_name="Synth Caller", last_name="Four")  # matches one name
+    items = {u["name"]: u for u in services.unmatched_callers(staged_without_callers)}
+    assert set(items) == {"Synth Caller One", "Synth Caller Two", "Synth Caller Three", "Unknown Person"}
+    assert items["Synth Caller One"]["username"] == "synth.caller.one"
+    assert len({u["username"] for u in items.values()}) == 4
+
+
+def test_create_callers_from_workbook(client, coordinator, staged_without_callers):
+    batch = staged_without_callers
+    items = services.unmatched_callers(batch)
+    data = {"create": [], **{f"name_{i}": u["name"] for i, u in enumerate(items)}}
+    for i, u in enumerate(items):
+        data[f"username_{i}"] = u["username"]
+        if u["name"].startswith("Synth"):
+            data["create"].append(str(i))
+    client.force_login(coordinator)
+    response = client.post(reverse("imports:create_callers", args=[batch.pk]), data)
+    assert response.status_code == 200
+    assert "no-store" in response["Cache-Control"]
+    created = response.context["created"]
+    assert len(created) == 4  # "Synth Caller One" also covers its spelling variant row
+    for _name, username, password in created:
+        user = User.objects.get(username=username)
+        assert set(user.groups.values_list("name", flat=True)) == {"Caller"}
+        assert not user.is_staff and not user.is_superuser
+        assert len(password) == 10 and user.check_password(password)
+        assert password in response.content.decode()
+    event = AuditEvent.objects.get(action="import.create_callers")
+    assert all(password not in str(event.details) for _, _, password in created)
+
+    batch.refresh_from_db()
+    remaining = {u["name"] for u in services.unmatched_callers(batch)}
+    assert remaining == {"Unknown Person"}
+    variant = batch.rows.get(row_number=SYNTHETIC_FACTS["caller_spelling_variant"])
+    assert variant.values["caller_id"] == User.objects.get(username="synth.caller.one").pk
+
+
+def test_create_callers_is_all_or_nothing(coordinator, staged_without_callers, make_user):
+    make_user("taken.name")
+    items = services.unmatched_callers(staged_without_callers)
+    entries = [(items[0]["name"], items[0]["username"]), (items[1]["name"], "taken.name")]
+    with pytest.raises(services.ImportProblem, match="already taken"):
+        services.create_callers_from_workbook(staged_without_callers, entries, coordinator)
+    assert not User.objects.filter(username=items[0]["username"]).exists()
+
+
+def test_create_callers_refuses_names_that_already_match(coordinator, staged_without_callers, make_user):
+    make_user("one", ["Caller"], first_name="Synth Caller", last_name="One")
+    with pytest.raises(services.ImportProblem):
+        services.create_callers_from_workbook(
+            staged_without_callers, [("Synth Caller One", "dup.one")], coordinator
+        )
+    assert not User.objects.filter(username="dup.one").exists()
+
+
+def test_callers_cannot_create_accounts_from_workbook(client, caller, staged_without_callers):
+    client.force_login(caller)
+    response = client.post(
+        reverse("imports:create_callers", args=[staged_without_callers.pk]),
+        {"create": ["0"], "name_0": "Synth Caller One", "username_0": "sneaky"},
+    )
+    assert response.status_code == 403
+    assert not User.objects.filter(username="sneaky").exists()
+
+
+def test_generated_passwords_are_readable_and_strong():
+    from apps.accounts.team import generate_password, suggest_username
+
+    passwords = {generate_password() for _ in range(200)}
+    assert len(passwords) == 200
+    for p in passwords:
+        assert len(p) == 10 and not set(p) & set("0O1lI")
+        assert any(c.isdigit() for c in p) and any(c.isupper() for c in p) and any(c.islower() for c in p)
+    taken = {"shalini.ji"}
+    assert suggest_username("Shalini ji", taken) == "shalini.ji2"
+    assert suggest_username("  Vansh  Ji ", taken) == "vansh.ji"

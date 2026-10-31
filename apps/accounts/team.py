@@ -7,6 +7,11 @@ Rules (enforced here and in the views):
   calls in open congregations are withdrawn, attempted calls stay credited to them).
 """
 
+import re
+import secrets
+import unicodedata
+
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils import timezone
@@ -19,6 +24,51 @@ from .roles import Role
 
 class TeamError(Exception):
     pass
+
+
+# Easy to read aloud or type from a printout: no 0/O, 1/l/I.
+_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+_LOWER = "abcdefghijkmnpqrstuvwxyz"
+_DIGITS = "23456789"
+
+
+def generate_password(length=None):
+    """Random password with at least one upper-case letter, lower-case letter and digit."""
+    length = max(length or settings.GENERATED_PASSWORD_LENGTH, 8)
+    alphabet = _UPPER + _LOWER + _DIGITS
+    while True:
+        password = "".join(secrets.choice(alphabet) for _ in range(length))
+        if (
+            any(c in _UPPER for c in password)
+            and any(c in _LOWER for c in password)
+            and any(c in _DIGITS for c in password)
+        ):
+            return password
+
+
+def split_name(full_name):
+    """'Shalini ji' -> ('Shalini', 'ji'); 'Kamlesh' -> ('Kamlesh', '')."""
+    parts = full_name.split()
+    if not parts:
+        return "", ""
+    return parts[0], " ".join(parts[1:])
+
+
+def suggest_username(full_name, taken):
+    """'Shalini ji' -> 'shalini.ji' (unique against ``taken``, which is updated)."""
+    text = unicodedata.normalize("NFKC", full_name).strip().lower()
+    base = re.sub(r"[^\w.@+-]+", ".", text).strip(".") or "caller"
+    base = re.sub(r"\.{2,}", ".", base)[:140]
+    candidate, n = base, 2
+    while candidate.lower() in taken:
+        candidate = f"{base}{n}"
+        n += 1
+    taken.add(candidate.lower())
+    return candidate
+
+
+def taken_usernames():
+    return {u.lower() for u in User.objects.values_list("username", flat=True)}
 
 
 def team_members():

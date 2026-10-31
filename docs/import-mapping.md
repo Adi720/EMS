@@ -100,6 +100,19 @@ Commit is only enabled when no row is in *Needs resolution*.
 - The uploaded file and staged rows are retained in restricted storage until the retention
   decision (N-2).
 
+## 6b. Changes (2026-10-31)
+
+- **Status sheet is optional** and off by default ("Also compare caller counts with the
+  '2026 Calling Sewa status' sheet" on the upload form). Without it nothing is compared and no
+  Total Assigned discrepancies are raised. It is still never used to change data.
+- **Caller accounts from the workbook.** On the review page, caller names that match no account
+  are listed with a suggested username (e.g. "Shalini ji" → `shalini.ji`). Names that look like an
+  existing account are unticked by default to avoid duplicate people. Ticked names get
+  Caller-only accounts with generated 10-character passwords (no look-alike characters) in one
+  all-or-nothing step; a caller alias is saved so their rows match automatically. The username
+  and password list is shown once (copy / print / download), never stored readable, and
+  passwords are not written to the audit log. Coordinators and admins can use it.
+
 ## 6a. As implemented (2026-10-30)
 
 - Screens: Import → Upload → Map columns → Preview (counts, discrepancies, caller-name table,

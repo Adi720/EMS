@@ -18,13 +18,21 @@ class UploadForm(BootstrapFormMixin, forms.Form):
         label="Workbook (.xlsx) or CSV",
         validators=[FileExtensionValidator(["xlsx", "csv"])],
     )
-    contact_sheet = forms.CharField(
-        required=False, max_length=100, help_text="Leave blank to use the 'EMS STALL SEWA' sheet."
+    use_status_sheet = forms.BooleanField(
+        required=False,
+        label="Also compare caller counts with the '2026 Calling Sewa status' sheet (optional)",
     )
-    status_sheet = forms.CharField(
+    contact_sheet = forms.CharField(
+        label="Saints sheet name (optional)",
         required=False,
         max_length=100,
-        help_text="Leave blank to use the '2026 Calling Sewa status' sheet if present.",
+        help_text="Leave blank to use the 'EMS STALL SEWA' sheet.",
+    )
+    status_sheet = forms.CharField(
+        label="Status sheet name (optional)",
+        required=False,
+        max_length=100,
+        help_text="Only used when the comparison above is ticked. Leave blank for '2026 Calling Sewa status'.",
     )
 
     def clean_file(self):

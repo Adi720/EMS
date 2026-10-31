@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Caller accounts created{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item"><a href="{% url 'imports:detail' batch.pk %}">#{{ batch.pk }}</a></li><li class="breadcrumb-item active" aria-current="page">Accounts created</li></ol></nav>
+{% include "includes/ui/page_header.html" with title="Caller accounts created" subtitle="Share each caller's username and password with them privately." only %}
+
+<div class="alert alert-warning" role="alert">{% icon "exclamation-triangle" %}
+  <div class="alert-body"><strong>This list is shown only once.</strong> The passwords are not stored in readable form.
+    Copy, print or download it now. If a password is lost, reset it on the Team page.</div>
+</div>
+
+<section class="card mb-3">
+  <div class="ems-card-header">
+    <h2 class="ems-section-title">{{ created|length }} account{{ created|length|pluralize }}</h2>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-target="#credentials-text" data-copy-status="#copy-status">{% icon "clipboard" %}Copy all</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="download-credentials">{% icon "download" %}Download CSV</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">{% icon "printer" %}Print</button>
+      <span class="small ems-muted align-self-center" id="copy-status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table" id="credentials">
+      <thead><tr><th>Caller</th><th>Username</th><th>Password</th></tr></thead>
+      <tbody>
+        {% for name, username, password in created %}
+        <tr><td>{{ name }}</td><td><code>{{ username }}</code></td><td><code class="fs-6">{{ password }}</code></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+<textarea class="visually-hidden" id="credentials-text" readonly aria-hidden="true">Login: {{ login_url }}
+{% for name, username, password in created %}{{ name }} — username: {{ username }} — password: {{ password }}
+{% endfor %}</textarea>
+
+<p class="small ems-muted">Callers log in at <strong>{{ login_url }}</strong>. They can change their password from the menu under their name.</p>
+<a class="btn btn-primary" href="{% url 'imports:detail' batch.pk %}">{% icon "arrow-right" %}Continue the import</a>
+
+<script>
+  document.getElementById("download-credentials").addEventListener("click", function () {
+    var rows = [["Caller", "Username", "Password"]];
+    document.querySelectorAll("#credentials tbody tr").forEach(function (tr) {
+      rows.push(Array.from(tr.cells).map(function (td) { return td.textContent.trim(); }));
+    });
+    var csv = rows.map(function (r) {
+      return r.map(function (v) {
+        if (/^[=+\-@\t\r]/.test(v)) { v = "'" + v; }  // never let Excel run a cell as a formula
+        return '"' + v.replace(/"/g, '""') + '"';
+      }).join(",");
+    }).join("\r\n");
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+    link.download = "ems-caller-logins.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  });
+</script>
+{% endblock %}

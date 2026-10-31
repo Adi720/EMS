@@ -50,8 +50,42 @@
 </div>
 {% endif %}
 
+{% if unmatched_callers %}
+<section class="card mb-3 border-primary-subtle" aria-labelledby="create-callers-title">
+  <div class="ems-card-header">
+    <div>
+      <h2 class="ems-section-title" id="create-callers-title"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ unmatched_callers|length }} caller name{{ unmatched_callers|length|pluralize }} in the workbook ha{{ unmatched_callers|length|pluralize:"s,ve" }} no account yet</h2>
+      <div class="small ems-muted">Create Caller-only accounts for them. Passwords are generated and shown once, for you to share privately. If a name is just a different spelling of an existing person, untick it and pick that person in the table below instead.</div>
+    </div>
+  </div>
+  <form method="post" action="{% url 'imports:create_callers' batch.pk %}" onsubmit="return confirm('Create the ticked caller accounts?');">
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead><tr><th scope="col"><span class="visually-hidden">Create</span></th><th>Workbook name</th><th class="text-end">Saints</th><th>Username</th><th>Note</th></tr></thead>
+        <tbody>
+          {% for u in unmatched_callers %}
+          <tr>
+            <td><input class="form-check-input" type="checkbox" name="create" value="{{ forloop.counter0 }}" id="create-{{ forloop.counter0 }}" {% if not u.similar %}checked{% endif %}></td>
+            <td><label for="create-{{ forloop.counter0 }}">{{ u.name }}</label><input type="hidden" name="name_{{ forloop.counter0 }}" value="{{ u.name }}"></td>
+            <td class="text-end ems-num">{{ u.rows }}</td>
+            <td><input class="form-control form-control-sm" name="username_{{ forloop.counter0 }}" value="{{ u.username }}" aria-label="Username for {{ u.name }}" maxlength="150" style="min-width: 10rem"></td>
+            <td class="small">{% if u.similar %}<span class="text-warning-emphasis">Similar existing account: {% for s in u.similar %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% else %}<span class="ems-muted">New caller</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body border-top d-flex flex-wrap align-items-center gap-2">
+      <button class="btn btn-primary">Create ticked accounts</button>
+      <span class="small ems-muted">Accounts get the Caller role only. Nothing is imported yet.</span>
+    </div>
+  </form>
+</section>
+{% endif %}
+
 <div class="row g-3 mb-3">
-  <div class="col-xl-6">
+  <div class="{% if status_records %}col-xl-6{% else %}col-12{% endif %}">
     <div class="card h-100">
       <div class="card-header fw-semibold">Caller names in the workbook → users</div>
       <div class="table-responsive">
@@ -85,6 +119,7 @@
       </div>
     </div>
   </div>
+  {% if status_records %}
   <div class="col-xl-6">
     <div class="card h-100">
       <div class="card-header fw-semibold">Status sheet: Total Assigned vs workbook rows</div>
@@ -97,13 +132,13 @@
               <td>{{ r.name }}</td><td>{{ r.coordinator }}</td><td>{{ r.user|default:"—" }}</td>
               <td class="text-end">{{ r.total_assigned_raw|default:"—" }}</td><td class="text-end">{{ r.derived|default_if_none:"—" }}</td>
             </tr>
-            {% empty %}<tr><td colspan="5" class="text-body-secondary">No status sheet records.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 
 <div class="card mb-3">
