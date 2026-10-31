@@ -42,26 +42,45 @@ def stage_upload(uploaded_file, actor, *, contact_sheet="", status_sheet="", use
     """Read the workbook into a staged batch. The status sheet is only read when asked for,
     because it is not always kept up to date; it is then used purely as a cross-check."""
     sha = parsing.sha256_of(uploaded_file)
-    file_type, sheets = parsing.read_sheets(uploaded_file)
+    choice = {}
 
-    contact_name = contact_sheet.strip() or parsing.find_sheet(sheets, parsing.CONTACT_SHEET)
-    if not contact_name:
-        contact_name = next(iter(sheets)) if len(sheets) == 1 else None
-    if contact_name not in sheets:
-        raise ImportProblem(
-            "Could not find the contact sheet. Available sheets: " + ", ".join(sheets) + ". "
-            "Enter the sheet name in the upload form."
-        )
-    status_name = ""
-    if use_status_sheet:
-        status_name = status_sheet.strip() or parsing.find_sheet(sheets, parsing.STATUS_SHEET) or ""
-        if not status_name:
-            raise ImportProblem(
-                "No '2026 Calling Sewa status' sheet was found. Untick the comparison option, "
-                "or enter the status sheet's name. Available sheets: " + ", ".join(sheets) + "."
-            )
-        if status_name not in sheets:
-            raise ImportProblem(f"Sheet '{status_name}' was not found.")
+    def choose(names):
+        """Pick the Saints sheet (and the status sheet if asked for) before anything is read."""
+        listed = ", ".join(names)
+
+        def typed(value):  # a sheet name entered on the form must match exactly (case aside)
+            found = parsing.find_sheet(names, value, partial=False)
+            if found is None:
+                raise ImportProblem(f"Sheet '{value}' was not found. Sheets in the file: {listed}.")
+            return found
+
+        if contact_sheet.strip():
+            contact = typed(contact_sheet.strip())
+        else:
+            contact = parsing.find_sheet(names, parsing.CONTACT_SHEET)
+            if contact is None and len(names) == 1:
+                contact = names[0]
+            if contact is None:
+                raise ImportProblem(
+                    "Could not find the 'EMS STALL SEWA' sheet. Sheets in the file: " + listed + ". "
+                    "Enter the Saints sheet name under 'Sheet names' in the upload form."
+                )
+        status = ""
+        if use_status_sheet:
+            if status_sheet.strip():
+                status = typed(status_sheet.strip())
+            else:
+                status = parsing.find_sheet(names, parsing.STATUS_SHEET) or ""
+            if not status:
+                raise ImportProblem(
+                    "No '2026 Calling Sewa status' sheet was found. Untick the comparison option, "
+                    "or enter the status sheet's name. Sheets in the file: " + listed + "."
+                )
+        choice.update(contact=contact, status=status)
+        return [contact] + ([status] if status else [])
+
+    file_type, sheet_names, sheets = parsing.read_sheets(uploaded_file, choose)
+    contact_name, status_name = choice["contact"], choice["status"]
 
     known = [alias for _, _, _, aliases in parsing.TARGET_FIELDS for alias in aliases]
     rows = sheets[contact_name]
@@ -78,7 +97,7 @@ def stage_upload(uploaded_file, actor, *, contact_sheet="", status_sheet="", use
         original_filename=uploaded_file.name[:255],
         file_sha256=sha,
         file_type=file_type,
-        sheet_names=list(sheets),
+        sheet_names=sheet_names,
         contact_sheet=contact_name,
         status_sheet=status_name,
         header_row=header_index + 1,

@@ -50,5 +50,14 @@
     }
   });
 
+  // "Select all" checkbox: <input type="checkbox" data-select-all="ids"> ticks every
+  // checkbox named "ids" in the same form.
+  document.addEventListener("change", function (event) {
+    var all = event.target.closest("[data-select-all]");
+    if (!all || !all.form) { return; }
+    var boxes = all.form.querySelectorAll('input[type="checkbox"][name="' + all.getAttribute("data-select-all") + '"]');
+    Array.prototype.forEach.call(boxes, function (box) { box.checked = all.checked; });
+  });
+
   paintThemeButtons();
 })();

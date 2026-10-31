@@ -13,7 +13,7 @@ Labels follow `docs/requirements.md`: [C] confirmed, [D] accepted default, [A] a
 
 | Sheet | Use in MVP import | Label |
 |---|---|---|
-| `EMS STALL SEWA` | **Primary source** — one row per contact; creates Contacts and initial Allocations | [C] |
+| `EMS STALL SEWA` (also found when the name has a year, e.g. `2026 EMS STALL SEWA`; no other sheet is read) | **Primary source** — one row per contact; creates Contacts and initial Allocations | [C] |
 | `2026 Calling Sewa status` | **Optional cross-check only** (off by default; not reliably maintained) — expected `Total Assigned` per caller. No records created | [C] |
 | `Weekly Data` | Not imported. Weekly aggregates; candidate for a later "legacy weekly summary" if approved | [C] |
 | `Calling Sewa status` (older) | Not imported | [C] |

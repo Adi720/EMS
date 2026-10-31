@@ -418,3 +418,49 @@ def test_review_summary_counts_problems_and_previews_result(staged):
     assert review["issues"]["unmatched_callers"] >= 2  # unknown and blank caller rows
     assert review["to_create"] == review["ready"] + review["warning"]
     assert sum(n for _, n in review["per_caller"]) == review["to_allocate"]
+
+
+# --- Choosing the Saints sheet -----------------------------------------------------
+
+
+def renamed_workbook(content, settings):
+    """The synthetic workbook with a year in the Saints sheet name and extra linked sheets."""
+    import io
+
+    from openpyxl import load_workbook
+
+    book = load_workbook(io.BytesIO(content))
+    book["EMS STALL SEWA"].title = "2026 EMS STALL SEWA"
+    summary = book.create_sheet("Area summary", 0)  # first in the file, like a dashboard
+    summary.append(["NAME", "AREA", "MOBILE NO"])
+    summary.append(["='2026 EMS STALL SEWA'!B2", "Linked", "98765 43210"])
+    big = book.create_sheet("Old data")
+    for number in range(settings.IMPORT_MAX_ROWS + 50):
+        big.append([number])
+    out = io.BytesIO()
+    book.save(out)
+    return out.getvalue()
+
+
+def test_finds_saints_sheet_with_year_and_reads_no_other_sheet(workbook, coordinator, settings):
+    content = renamed_workbook(workbook[0], settings)
+    batch = services.stage_upload(upload(content), coordinator)
+    assert batch.contact_sheet == "2026 EMS STALL SEWA"
+    assert batch.rows.count() == len(workbook[1])  # nothing from 'Area summary' or 'Old data'
+    assert "Area summary" in batch.sheet_names and "Old data" in batch.sheet_names
+
+
+def test_sheet_name_matching():
+    names = ["Area summary", "2026 EMS STALL SEWA", "2026 Calling Sewa status"]
+    assert parsing.find_sheet(names, "ems stall sewa") == "2026 EMS STALL SEWA"
+    assert parsing.find_sheet(names, "2026 ems  stall sewa", partial=False) == "2026 EMS STALL SEWA"
+    assert parsing.find_sheet(names, "stall sewa", partial=False) is None
+    assert parsing.find_sheet(["EMS STALL SEWA", "EMS STALL SEWA old"], "ems stall sewa") == "EMS STALL SEWA"
+    assert parsing.find_sheet(["2025 EMS STALL SEWA", "2026 EMS STALL SEWA"], "ems stall sewa") is None
+
+
+def test_typed_sheet_name_must_exist(workbook, coordinator):
+    with pytest.raises(services.ImportProblem, match="Sheets in the file"):
+        services.stage_upload(upload(workbook[0]), coordinator, contact_sheet="Nope")
+    batch = services.stage_upload(upload(workbook[0]), coordinator, contact_sheet="ems stall sewa")
+    assert batch.contact_sheet == "EMS STALL SEWA"

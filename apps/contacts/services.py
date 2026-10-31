@@ -160,3 +160,54 @@ def change_status(
         tasks=task_changes,
     )
     return contact
+
+
+def deletable(contacts):
+    """Split contacts into (can delete, kept). A Saint with recorded call results is kept so
+    past congregation reports stay correct; mark them Inactive or Do not call instead."""
+    from apps.calling.models import CallAttempt
+
+    with_calls = set(
+        CallAttempt.objects.filter(task__contact__in=contacts).values_list("task__contact_id", flat=True)
+    )
+    can, kept = [], []
+    for contact in contacts:
+        (kept if contact.pk in with_calls else can).append(contact)
+    return can, kept
+
+
+@transaction.atomic
+def delete_contacts(contacts, actor, reason=""):
+    """Permanently delete Saints that have no call results, with their caller assignments,
+    status history and not-yet-called list entries. Returns the names deleted."""
+    from apps.allocations.models import Allocation
+    from apps.calling.models import CallTask
+    from apps.imports.models import ImportRow
+
+    contacts = list(Contact.objects.select_for_update().filter(pk__in=[c.pk for c in contacts]))
+    can, kept = deletable(contacts)
+    if kept:
+        raise LifecycleError(
+            "These Saints have call results and cannot be deleted: "
+            + ", ".join(c.full_name for c in kept)
+            + ". Change their status to Inactive or Do not call instead."
+        )
+    ids = [c.pk for c in can]
+    # Bulk deletes on purpose: the history models refuse instance.delete() in normal use.
+    CallTask.objects.filter(contact_id__in=ids).delete()
+    Allocation.objects.filter(contact_id__in=ids).delete()
+    ContactStatusChange.objects.filter(contact_id__in=ids).delete()
+    ImportRow.objects.filter(contact_id__in=ids).update(contact=None)
+    ImportRow.objects.filter(link_contact_id__in=ids).update(link_contact=None)
+    names = [c.full_name for c in can]
+    for contact in can:
+        log_event(
+            actor,
+            "contact.delete",
+            f"Deleted Saint {contact.full_name}",
+            contact,
+            area=contact.area,
+            reason=reason,
+        )
+    Contact.objects.filter(pk__in=ids).delete()
+    return names

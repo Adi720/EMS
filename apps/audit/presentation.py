@@ -7,6 +7,7 @@ ACTIONS = {
     "contact.create": ("Added a Saint", "person-plus"),
     "contact.update": ("Edited a Saint's details", "pencil"),
     "contact.status_change": ("Changed a Saint's status", "toggle-on"),
+    "contact.delete": ("Deleted a Saint", "trash"),
     "allocation.apply": ("Changed who calls whom", "diagram-3"),
     "allocation.cycle_create": ("Started an allocation cycle", "calendar-plus"),
     "task.moved": ("Moved a call to another caller", "arrow-left-right"),
@@ -68,6 +69,8 @@ def describe(event):
     name = RECORD_URLS.get(event.object_type)
     if event.object_type == "accounts.user" and event.action.startswith("team."):
         name = "team:detail"
+    if event.action.endswith(".delete"):
+        name = None  # the record no longer exists
     if name and event.object_id.isdigit():
         try:
             event.record_url = reverse(name, args=[int(event.object_id)])

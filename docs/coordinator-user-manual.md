@@ -62,7 +62,7 @@ Follow the **Setup** checklist on the dashboard:
 - Tabs at the top filter by status and show counts.
 - **Search** by name or part of the mobile number; filter by **Area** and **Caller**
   (choose *No caller* to find Saints nobody is calling). Click **Apply**; the ✕ clears filters.
-- **⋯** on a row: View details · Edit · Change status.
+- **⋯** on a row: View details · Edit · Change status · Delete.
 - **Export** downloads the list as Excel or CSV. Saints marked *Do not call* are left out unless
   you choose "including Do not call".
 
@@ -85,6 +85,17 @@ by someone else you get a warning — tick the confirmation only if it really is
 | Do not call | They asked not to be contacted | Not called; number hidden from callers; left out of exports. Going back to Active needs a note confirming they agreed |
 
 Calls already made and all history are always kept.
+
+**Delete a Saint** (coordinators and system administrators) — for Saints added by mistake or
+twice. On the Saint page click **Delete**, or on the Saints Directory tick several rows (the box in
+the heading ticks the whole page) → **Delete selected**. A confirmation page lists who will be
+deleted; add a reason if you like and confirm. Their caller assignments, status history and
+not-yet-called places on call lists go with them. This cannot be undone, and each delete is
+recorded in the Audit log.
+
+A Saint who **already has call results** cannot be deleted, because those results are part of past
+congregation reports. They are shown as *Kept* on the confirmation page — use **Change status →
+Inactive** or **Do not call** for them instead.
 
 ## 5. Team (callers)
 

@@ -2,8 +2,10 @@ from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Count, OuterRef, Q, Subquery
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import DetailView, FormView, ListView
 
@@ -247,6 +249,56 @@ class ContactReassignView(CoordinatorRequiredMixin, View):
         view = ContactDetailView(request=request, kwargs={"pk": pk})
         view.object = contact
         return view.render_to_response(view.get_context_data(reassign_form=form))
+
+
+MAX_DELETE = 200
+
+
+class ContactDeleteView(CoordinatorRequiredMixin, View):
+    """Confirm and delete one or more Saints (``?ids=1,2`` or ``ids`` form values)."""
+
+    template_name = "contacts/contact_delete.html"
+
+    def selected(self, request):
+        source = request.POST if request.method == "POST" else request.GET
+        ids = []
+        for value in source.getlist("ids"):
+            ids += [part for part in value.split(",") if part.strip().isdigit()]
+        return list(Contact.objects.filter(pk__in=ids[:MAX_DELETE]).order_by("full_name", "id"))
+
+    def get(self, request):
+        contacts = self.selected(request)
+        if not contacts:
+            messages.info(request, "Select at least one Saint to delete.")
+            return redirect("contacts:list")
+        can, kept = services.deletable(contacts)
+        return render(
+            request,
+            self.template_name,
+            {"can": can, "kept": kept, "next": safe_next(request, reverse("contacts:list"))},
+        )
+
+    def post(self, request):
+        contacts = self.selected(request)
+        can, _ = services.deletable(contacts)
+        if not can:
+            messages.error(request, "None of the selected Saints can be deleted.")
+            return redirect("contacts:list")
+        names = services.delete_contacts(can, request.user, reason=request.POST.get("reason", "")[:300])
+        shown = ", ".join(names[:5]) + (f" and {len(names) - 5} more" if len(names) > 5 else "")
+        messages.success(request, f"Deleted {len(names)} Saint{'s' if len(names) != 1 else ''}: {shown}.")
+        return redirect(safe_next(request, reverse("contacts:list")))
+
+
+def safe_next(request, default):
+    """A same-site list URL to return to after deleting, or ``default``."""
+    target = request.POST.get("next") or request.GET.get("next") or ""
+    list_url = reverse("contacts:list")
+    if target.startswith(list_url) and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return target
+    return default
 
 
 EXPORT_HEADERS = [

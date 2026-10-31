@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Delete Saints{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Saints</a></li><li class="breadcrumb-item active" aria-current="page">Delete</li></ol></nav>
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    {% if can %}
+      {% include "includes/ui/page_header.html" with title="Delete Saints" subtitle="This cannot be undone. Use it for Saints added by mistake or twice." only %}
+      <form method="post" class="card card-body">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        <p class="mb-2">These <strong>{{ can|length }}</strong> Saint{{ can|pluralize }} will be deleted, together with their caller assignments, status history and any place on a call list that has not been called yet:</p>
+        <ul class="mb-3">
+          {% for c in can %}<li><input type="hidden" name="ids" value="{{ c.pk }}">{{ c.full_name }} <span class="ems-muted small">· {{ c.area }}</span></li>{% endfor %}
+        </ul>
+        <label class="form-label" for="reason">Reason (optional, kept in the audit log)</label>
+        <input class="form-control mb-3" id="reason" name="reason" maxlength="300" placeholder="e.g. added twice">
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-danger" type="submit">{% icon "trash" %}Delete {{ can|length }} Saint{{ can|pluralize }}</button>
+          <a class="btn btn-outline-secondary" href="{{ next }}">Cancel</a>
+        </div>
+      </form>
+    {% else %}
+      {% include "includes/ui/page_header.html" with title="Delete Saints" subtitle="None of the selected Saints can be deleted." only %}
+    {% endif %}
+    {% if kept %}
+      <div class="alert alert-warning mt-3">{% icon "shield-exclamation" %}
+        <div class="alert-body"><strong>Kept — already called:</strong>
+          {% for c in kept %}<a class="alert-link" href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+          Their call results are part of past congregation reports. To stop calling them, open the Saint and <strong>Change status</strong> to Inactive or Do not call.</div>
+      </div>
+      {% if not can %}<a class="btn btn-outline-secondary" href="{{ next }}">Back to Saints</a>{% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

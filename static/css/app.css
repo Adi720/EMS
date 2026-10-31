@@ -853,3 +853,6 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
   .ems-sidebar, .ems-topbar, .ems-offcanvas { display: none !important; }
   .ems-content { max-width: none; padding: 0; }
 }
+
+/* Selection checkbox column in tables */
+.ems-col-check { width: 2.5rem; }

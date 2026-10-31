@@ -26,7 +26,7 @@ class UploadForm(BootstrapFormMixin, forms.Form):
         label="Saints sheet name (optional)",
         required=False,
         max_length=100,
-        help_text="Leave blank to use the 'EMS STALL SEWA' sheet.",
+        help_text="Leave blank to use the sheet whose name contains 'EMS STALL SEWA' (e.g. '2026 EMS STALL SEWA').",
     )
     status_sheet = forms.CharField(
         label="Status sheet name (optional)",

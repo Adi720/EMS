@@ -40,6 +40,7 @@ Saints never log in.
 | Status: **Active**, **Temporarily unavailable** (with review date), **Inactive / moved away**, **Do not call** — with reason, date and full history | Coordinator | Saint page |
 | Saint page with calls, caller history and status history timelines | Coordinator | Saint page |
 | Export Saints to Excel or CSV (Do not call excluded unless chosen) | Coordinator | Saints → Export |
+| **Delete Saints** added by mistake, one at a time or several selected, with confirmation and audit entry; Saints with call results are kept | Coordinator | Saint page, Saints → Delete selected |
 
 ### Team and assignments
 | Feature | Who | Where |

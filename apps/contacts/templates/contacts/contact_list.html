@@ -61,14 +61,20 @@
 {% if object_list %}
 <div class="small ems-muted mb-2">{{ total }} Saint{{ total|pluralize }}{% if has_filters %} match{{ total|pluralize:"es," }} the filters{% endif %}</div>
 
-{# Desktop / tablet: table #}
-<div class="card d-none d-md-block">
+{# Desktop / tablet: table. The checkboxes feed "Delete selected". #}
+<form method="get" action="{% url 'contacts:delete' %}" class="d-none d-md-block" id="bulk-form">
+<input type="hidden" name="next" value="{{ request.get_full_path }}">
+<div class="d-flex justify-content-end mb-2">
+  <button class="btn btn-sm btn-outline-danger" type="submit">{% icon "trash" %}Delete selected</button>
+</div>
+<div class="card">
   <div class="table-responsive">
     <table class="table table-hover align-middle">
-      <thead><tr><th>Saint</th><th>Mobile</th><th>Area</th><th>Assigned caller</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <thead><tr><th class="ems-col-check"><input class="form-check-input" type="checkbox" data-select-all="ids" aria-label="Select all Saints on this page"></th><th>Saint</th><th>Mobile</th><th>Area</th><th>Assigned caller</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>
         {% for c in object_list %}
         <tr>
+          <td class="ems-col-check"><input class="form-check-input" type="checkbox" name="ids" value="{{ c.pk }}" aria-label="Select {{ c.full_name }}"></td>
           <td><a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a></td>
           <td class="ems-num text-nowrap">{{ c.phone_display }}</td>
           <td>{{ c.area }}</td>
@@ -81,6 +87,8 @@
                 <li><a class="dropdown-item" href="{% url 'contacts:detail' c.pk %}">{% icon "person-vcard" %}View details</a></li>
                 <li><a class="dropdown-item" href="{% url 'contacts:edit' c.pk %}">{% icon "pencil" %}Edit</a></li>
                 <li><a class="dropdown-item" href="{% url 'contacts:detail' c.pk %}#change-status">{% icon "toggle-on" %}Change status</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'contacts:delete' %}?ids={{ c.pk }}&amp;next={{ request.get_full_path|urlencode }}">{% icon "trash" %}Delete</a></li>
               </ul>
             </div>
           </td>
@@ -90,6 +98,7 @@
     </table>
   </div>
 </div>
+</form>
 
 {# Phone: cards #}
 <div class="d-md-none d-grid gap-2">

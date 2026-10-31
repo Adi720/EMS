@@ -86,8 +86,12 @@ def cell_to_json(value):
     return text or None
 
 
-def read_sheets(uploaded_file):
-    """Return (file_type, {sheet name: [row tuples]})."""
+def read_sheets(uploaded_file, choose=None):
+    """Return (file_type, all sheet names, {chosen sheet name: [row tuples]}).
+
+    ``choose(names)`` returns the sheet names to read; only those are loaded, so other
+    sheets in the workbook (summaries, linked or very large sheets) are never parsed.
+    """
     name = uploaded_file.name.lower()
     if uploaded_file.size > settings.IMPORT_MAX_UPLOAD_BYTES:
         raise ParseError("The file is too large.")
@@ -98,7 +102,11 @@ def read_sheets(uploaded_file):
             raise ParseError("The file could not be read as an Excel (.xlsx) workbook.") from exc
         sheets = {}
         try:
+            names = list(workbook.sheetnames)
+            wanted = set(choose(names) if choose else names)
             for sheet in workbook.worksheets:
+                if sheet.title not in wanted:
+                    continue
                 rows = []
                 for index, row in enumerate(sheet.iter_rows(values_only=True, max_col=MAX_COLUMNS)):
                     if index > settings.IMPORT_MAX_ROWS + 20:
@@ -109,7 +117,7 @@ def read_sheets(uploaded_file):
                 sheets[sheet.title] = rows
         finally:
             workbook.close()
-        return "xlsx", sheets
+        return "xlsx", names, sheets
     if name.endswith(".csv"):
         raw = uploaded_file.read()
         for encoding in ("utf-8-sig", "cp1252"):
@@ -123,15 +131,21 @@ def read_sheets(uploaded_file):
         rows = [tuple(cell_to_json(v) for v in row[:MAX_COLUMNS]) for row in csv.reader(io.StringIO(text))]
         if len(rows) > settings.IMPORT_MAX_ROWS + 20:
             raise ParseError(f"The file has more than {settings.IMPORT_MAX_ROWS} rows.")
-        return "csv", {"CSV": rows}
+        if choose:
+            choose(["CSV"])
+        return "csv", ["CSV"], {"CSV": rows}
     raise ParseError("Upload an .xlsx or .csv file.")
 
 
-def find_sheet(sheets, wanted):
-    for name in sheets:
-        if norm_header(name) == wanted:
-            return name
-    return None
+def find_sheet(names, wanted, partial=True):
+    """The sheet called ``wanted`` (case and spacing ignored). Failing that, the only sheet
+    whose name contains it, e.g. '2026 EMS STALL SEWA' for 'ems stall sewa'."""
+    wanted = norm_header(wanted)
+    exact = [n for n in names if norm_header(n) == wanted]
+    if exact or not partial:
+        return exact[0] if exact else None
+    containing = [n for n in names if wanted in norm_header(n)]
+    return containing[0] if len(containing) == 1 else None
 
 
 def detect_header_row(rows, known_headers, scan=10):
