@@ -81,24 +81,24 @@ def test_ready_calling_and_completed_states(coord_client, caller, coordinator, m
     assert "View results" in response.content.decode()
 
 
-def test_add_caller_action_only_for_system_admins(client, coordinator, sysadmin):
-    admin_add_user = reverse("admin:accounts_user_add")
+def test_add_caller_uses_in_app_team_management(client, coordinator):
     client.force_login(coordinator)
-    assert admin_add_user not in client.get(DASHBOARD).content.decode()
-    client.force_login(sysadmin)
-    assert admin_add_user in client.get(DASHBOARD).content.decode()
+    content = client.get(DASHBOARD).content.decode()
+    assert reverse("team:create") in content
+    assert reverse("admin:accounts_user_add") not in content
 
 
 def test_navigation_by_role(client, caller, coordinator):
     client.force_login(coordinator)
     content = client.get(DASHBOARD).content.decode()
-    assert ">Saints<" in content and ">Team &amp; Assignments<" in content
+    assert ">Saints<" in content and ">Team<" in content and ">Assignments<" in content
     assert 'class="ems-nav__link active" href="/coordinator/" aria-current="page"' in content
 
     client.force_login(caller)
     content = client.get(reverse("core:caller_dashboard")).content.decode()
     for coordinator_only in [
         "contacts:list",
+        "team:list",
         "allocations:home",
         "imports:list",
         "audit:event_list",

@@ -20,8 +20,10 @@
       <div class="ems-nav__label">People</div>
       {% nav_is_active "contacts" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'contacts:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "people" %}<span>Saints</span></a>
+      {% nav_is_active "team" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'team:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "headset" %}<span>Team</span></a>
       {% nav_is_active "allocations" as on %}
-      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'allocations:home' %}"{% if on %} aria-current="page"{% endif %}>{% icon "diagram-3" %}<span>Team &amp; Assignments</span></a>
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'allocations:home' %}"{% if on %} aria-current="page"{% endif %}>{% icon "diagram-3" %}<span>Assignments</span></a>
     </div>
     <div class="ems-nav__group">
       <div class="ems-nav__label">Insights</div>

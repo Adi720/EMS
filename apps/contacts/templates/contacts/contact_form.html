@@ -1,20 +1,27 @@
 {% extends "base.html" %}
-{% block title %}{% if contact %}Edit {{ contact }}{% else %}Add contact{% endif %}{% endblock %}
+{% load ui %}
+{% block title %}{% if contact %}Edit {{ contact }}{% else %}Add Saint{% endif %}{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'contacts:list' %}">Saints</a></li>{% if contact %}<li class="breadcrumb-item"><a href="{% url 'contacts:detail' contact.pk %}">{{ contact }}</a></li>{% endif %}<li class="breadcrumb-item active" aria-current="page">{% if contact %}Edit{% else %}Add Saint{% endif %}</li></ol></nav>
 <div class="row justify-content-center">
-  <div class="col-lg-7">
-    <h1 class="h3 mb-3">{% if contact %}Edit {{ contact }}{% else %}Add contact{% endif %}</h1>
+  <div class="col-lg-8 col-xl-7">
+    {% if contact %}
+      {% include "includes/ui/page_header.html" with title="Edit Saint" subtitle="Update contact details. Status and caller are changed on the Saint's page." only %}
+    {% else %}
+      {% include "includes/ui/page_header.html" with title="Add Saint" subtitle="Name, mobile, area and the date they were met at the stall are required. Choose a caller now or later." only %}
+    {% endif %}
     {% if form.duplicates %}
-      <div class="alert alert-warning">
-        <strong>Possible duplicates</strong> (same phone number):
-        <ul class="mb-0">{% for d in form.duplicates %}<li><a href="{% url 'contacts:detail' d.pk %}" target="_blank" rel="noopener">{{ d.full_name }}</a> — {{ d.area }} ({{ d.get_status_display }})</li>{% endfor %}</ul>
+      <div class="alert alert-warning">{% icon "people" %}
+        <div class="alert-body"><strong>Possible duplicate</strong> — another Saint has this mobile number:
+          <ul class="mb-0 mt-1">{% for d in form.duplicates %}<li><a class="alert-link" href="{% url 'contacts:detail' d.pk %}" target="_blank" rel="noopener">{{ d.full_name }}</a> — {{ d.area }} ({{ d.get_status_display }})</li>{% endfor %}</ul>
+        </div>
       </div>
     {% endif %}
     <form method="post" class="card card-body" novalidate>
       {% csrf_token %}
       {% include "includes/form_fields.html" %}
       <div class="d-flex gap-2">
-        <button class="btn btn-primary" type="submit">Save</button>
+        <button class="btn btn-primary" type="submit">{% if contact %}Save changes{% else %}{% icon "person-plus" %}Add Saint{% endif %}</button>
         <a class="btn btn-outline-secondary" href="{% if contact %}{% url 'contacts:detail' contact.pk %}{% else %}{% url 'contacts:list' %}{% endif %}">Cancel</a>
       </div>
     </form>

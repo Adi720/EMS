@@ -63,7 +63,7 @@ def _steps(user, caller_count, active_saints, unallocated, staged_import, week_s
     else:
         saints_action = (reverse("imports:upload"), "Import Excel workbook")
         saints_text = "Import the EMS workbook, or add Saints one by one."
-    callers_action = (reverse("admin:accounts_user_add"), "Add a caller") if user.is_superuser else (None, "")
+    callers_action = (reverse("team:create"), "Add a caller")
     calling_started = week_session is not None and week_session.status != SessionStatus.DRAFT
     return [
         {
@@ -72,9 +72,8 @@ def _steps(user, caller_count, active_saints, unallocated, staged_import, week_s
             "text": (
                 f"{caller_count} caller(s) so far. Each caller needs an account with the Caller role."
                 if caller_count
-                else "Each person who makes calls needs an account with the Caller role."
-            )
-            + ("" if user.is_superuser else " Ask your system administrator to create them."),
+                else "Each person who makes calls needs their own login with the Caller role."
+            ),
             "done": caller_count > 0,
             "url": callers_action[0],
             "action": callers_action[1],

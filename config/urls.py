@@ -9,6 +9,7 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
     path("contacts/", include("apps.contacts.urls")),
+    path("team/", include("apps.accounts.team_urls")),
     path("allocations/", include("apps.allocations.urls")),
     path("calling/", include("apps.calling.urls")),
     path("reports/", include("apps.reports.urls")),

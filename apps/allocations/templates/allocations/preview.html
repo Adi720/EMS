@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Preview allocation change{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Allocations</a></li><li class="breadcrumb-item active">Preview</li></ol></nav>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active">Preview</li></ol></nav>
 <h1 class="h3">Preview: {{ kind_label }}</h1>
 <p>Effective <strong>{{ form.cleaned_data.effective_date|date:"d M Y" }}</strong>{% if form.cleaned_data.cycle %} · cycle {{ form.cleaned_data.cycle }}{% endif %} · reason: {{ form.cleaned_data.reason }}</p>
 

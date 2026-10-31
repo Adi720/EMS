@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Allocation change{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Allocations</a></li><li class="breadcrumb-item active">Change #{{ operation.pk }}</li></ol></nav>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active">Change #{{ operation.pk }}</li></ol></nav>
 <h1 class="h3">{{ operation.get_kind_display }}</h1>
 <dl class="row">
   <dt class="col-sm-3">Effective date</dt><dd class="col-sm-9">{{ operation.effective_date|date:"d M Y" }}</dd>

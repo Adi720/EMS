@@ -1,72 +1,120 @@
 {% extends "base.html" %}
-{% block title %}Allocations{% endblock %}
+{% load ui %}
+{% block title %}Assignments{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">Allocations</h1>
-  <div class="d-flex flex-wrap gap-2 align-items-center">
-    <a class="btn btn-primary" href="{% url 'allocations:change' %}">Assign / move contacts</a>
-    <a class="btn btn-outline-primary" href="{% url 'allocations:change' %}?kind=swap">Swap lists</a>
-    <details class="small">
-      <summary>Advanced</summary>
-      <a href="{% url 'allocations:change' %}?kind=rotate">Rotate among several callers</a> ·
-      <a href="{% url 'allocations:cycle_create' %}">Start a new allocation cycle</a>
-    </details>
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">Team &amp; Assignments</h1>
+    <p class="ems-page-subtitle">Who calls whom. Each Saint stays with one caller for about three months; rotate the lists when a cycle ends.</p>
+  </div>
+  <div class="ems-page-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'allocations:change' %}?kind=swap">{% icon "arrow-left-right" %}Swap caller lists</a>
+    <a class="btn btn-outline-secondary" href="{% url 'allocations:change' %}?kind=move_all">{% icon "box-arrow-right" %}Move Saints</a>
+    <a class="btn btn-primary" href="{% url 'allocations:change' %}?kind=assign{% if unallocated %}&amp;caller=none{% endif %}">{% icon "person-plus" %}Assign Saints</a>
   </div>
 </div>
 
 {% if rotation_due %}
-<div class="alert alert-warning">Cycle <strong>{{ rotation_due }}</strong> is planned to end on {{ rotation_due.planned_end_date|date:"d M Y" }}. Time to rotate: use <a href="{% url 'allocations:change' %}?kind=swap">Swap lists</a> (or start a new cycle under Advanced).</div>
+<div class="alert alert-warning">{% icon "arrow-repeat" %}<div class="alert-body">Cycle <strong>{{ rotation_due }}</strong> is planned to end on {{ rotation_due.planned_end_date|date:"d M Y" }}. Time to rotate — use <a class="alert-link" href="{% url 'allocations:change' %}?kind=swap">Swap caller lists</a>, or start a new cycle under Advanced.</div></div>
 {% endif %}
 
-<div class="row g-3">
-  <div class="col-lg-5">
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Current lists</div>
-      <ul class="list-group list-group-flush">
-        {% for user, count in caller_counts %}
-        <li class="list-group-item d-flex justify-content-between">
-          <a href="{% url 'contacts:list' %}?caller={{ user.pk }}">{{ user }}</a>
-          <span class="badge text-bg-primary rounded-pill">{{ count }}</span>
-        </li>
-        {% empty %}<li class="list-group-item text-body-secondary">No callers yet. Give users the Caller role in Django Admin.</li>
-        {% endfor %}
-        <li class="list-group-item d-flex justify-content-between">
-          <a href="{% url 'contacts:list' %}?caller=none&amp;status=active">Active contacts without a caller</a>
-          <span class="badge {% if unallocated %}text-bg-danger{% else %}text-bg-secondary{% endif %} rounded-pill">{{ unallocated|length }}</span>
-        </li>
-      </ul>
+{% if unallocated %}
+<section class="card border-warning-subtle mb-4" aria-labelledby="unallocated-title">
+  <div class="ems-card-header">
+    <div>
+      <h2 class="ems-section-title" id="unallocated-title">{% icon "person-exclamation" extra_class="text-warning" %} {{ unallocated|length }} active Saint{{ unallocated|length|pluralize }} without a caller</h2>
+      <div class="small ems-muted">They will not be called until they have a caller.</div>
     </div>
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Cycles</div>
-      <ul class="list-group list-group-flush small">
-        {% for c in cycles %}
-        <li class="list-group-item"><strong>{{ c.name }}</strong> · {{ c.start_date|date:"d M Y" }} – {{ c.planned_end_date|date:"d M Y" }} <span class="badge text-bg-{% if c.status == 'active' %}success{% elif c.status == 'planned' %}info{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></li>
-        {% empty %}<li class="list-group-item text-body-secondary">No cycles yet. The first is usually created during the initial import.</li>
-        {% endfor %}
-      </ul>
-    </div>
+    <a class="btn btn-primary btn-sm" href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">Assign them</a>
   </div>
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header fw-semibold">Recent allocation changes</div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>When</th><th>Change</th><th>Effective</th><th class="text-end">Contacts</th><th>By</th></tr></thead>
-          <tbody>
-            {% for op in operations %}
-            <tr>
-              <td><a href="{% url 'allocations:operation' op.pk %}">{{ op.performed_at|date:"d M Y H:i" }}</a></td>
-              <td>{{ op.get_kind_display }}{% if op.reason %}<div class="small text-body-secondary">{{ op.reason|truncatechars:60 }}</div>{% endif %}</td>
-              <td>{{ op.effective_date|date:"d M Y" }}</td>
-              <td class="text-end">{{ op.change_count }}</td>
-              <td>{{ op.performed_by }}</td>
-            </tr>
-            {% empty %}<tr><td colspan="5" class="text-body-secondary">No changes yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <div class="card-body small">
+    {% for c in unallocated|slice:":12" %}<a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% if unallocated|length > 12 %} and {{ unallocated|length|add:"-12" }} more — <a href="{% url 'contacts:list' %}?caller=none&amp;status=active">see all</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<h2 class="ems-eyebrow mb-2">Callers{% if caller_cards %} · average {{ average }} Saints each{% endif %}{% if session %} · pending calls for {{ session }}{% endif %}</h2>
+{% if caller_cards %}
+<div class="row g-3 mb-4">
+  {% for card in caller_cards %}
+  {% with u=card.user %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100">
+      <div class="card-body d-flex flex-column gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <span class="ems-avatar" style="width:40px;height:40px" aria-hidden="true">{{ u|initials }}</span>
+          <div class="min-w-0 flex-fill">
+            <a class="fw-semibold text-decoration-none d-block text-truncate" href="{% url 'team:detail' u.pk %}">{{ u|display_name }}</a>
+            <div class="small ems-muted">{% if card.count %}{{ card.count }} Saint{{ card.count|pluralize }}{% else %}No Saints yet{% endif %}{% if card.pending is not None %} · {{ card.pending }} pending{% endif %}</div>
+          </div>
+          {% if not card.count %}<span class="badge text-bg-warning">Empty</span>{% elif card.pending == 0 and session %}<span class="badge text-bg-success">Done</span>{% endif %}
+        </div>
+        <div>
+          <div class="ems-progress__meta"><span>Workload</span><span>{{ card.count }}</span></div>
+          <div class="progress" role="progressbar" aria-label="Workload of {{ u|display_name }} compared with the busiest caller" aria-valuenow="{{ card.share }}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width: {{ card.share }}%"></div></div>
+        </div>
+        <div class="d-flex gap-2 mt-auto">
+          <a class="btn btn-sm btn-outline-secondary flex-fill" href="{% url 'contacts:list' %}?caller={{ u.pk }}">{% icon "people" %}View Saints</a>
+          <div class="dropdown flex-fill">
+            <button class="btn btn-sm btn-outline-secondary w-100 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Manage</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'allocations:change' %}?kind=assign&amp;to_caller={{ u.pk }}&amp;caller=none">{% icon "person-plus" %}Assign Saints to {{ u.first_name|default:u.username }}</a></li>
+              {% if card.count %}<li><a class="dropdown-item" href="{% url 'allocations:change' %}?kind=move_all&amp;from_caller={{ u.pk }}">{% icon "box-arrow-right" %}Move whole list…</a></li>
+              <li><a class="dropdown-item" href="{% url 'allocations:change' %}?kind=swap&amp;caller_a={{ u.pk }}">{% icon "arrow-left-right" %}Swap list with…</a></li>{% endif %}
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'team:detail' u.pk %}">{% icon "person-gear" %}Caller account</a></li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+  {% endwith %}
+  {% endfor %}
 </div>
+{% else %}
+  {% url 'team:create' as add_url %}
+  <div class="mb-4">{% include "includes/ui/empty_state.html" with icon="headset" title="No callers yet" text="Add the people who make calls, then assign Saints to them." action_url=add_url action_label="Add caller" action_icon="person-plus" only %}</div>
+{% endif %}
+
+<section class="card mb-4" aria-labelledby="changes-title">
+  <div class="ems-card-header"><h2 class="ems-section-title" id="changes-title">Recent changes</h2></div>
+  {% if operations %}
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>When</th><th>Change</th><th>From date</th><th class="text-end">Saints</th><th>By</th></tr></thead>
+      <tbody>
+        {% for op in operations %}
+        <tr>
+          <td class="text-nowrap"><a href="{% url 'allocations:operation' op.pk %}">{{ op.performed_at|date:"d M Y, H:i" }}</a></td>
+          <td>{{ op.get_kind_display }}{% if op.reason %}<div class="small ems-muted">{{ op.reason|truncatechars:70 }}</div>{% endif %}</td>
+          <td class="text-nowrap">{{ op.effective_date|date:"d M Y" }}</td>
+          <td class="text-end ems-num">{{ op.change_count }}</td>
+          <td>{{ op.performed_by|default:"system" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body small ems-muted">No changes yet. Every assignment, move and swap is listed here with who made it and why.</div>
+  {% endif %}
+</section>
+
+<details class="card">
+  <summary class="ems-card-header border-0">{% icon "sliders" %} Advanced: rotation among several callers and allocation cycles</summary>
+  <div class="card-body border-top">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'allocations:change' %}?kind=rotate">{% icon "arrow-repeat" %}Rotate among several callers</a>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'allocations:cycle_create' %}">{% icon "calendar-plus" %}Start a new allocation cycle</a>
+    </div>
+    <h3 class="ems-eyebrow">Cycles</h3>
+    <ul class="list-group list-group-flush small">
+      {% for c in cycles %}
+      <li class="list-group-item px-0 d-flex justify-content-between gap-2"><span><strong>{{ c.name }}</strong> · {{ c.start_date|date:"d M Y" }} – {{ c.planned_end_date|date:"d M Y" }}</span><span class="badge text-bg-{% if c.status == 'active' %}success{% elif c.status == 'planned' %}info{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></li>
+      {% empty %}<li class="list-group-item px-0 ems-muted">No cycles yet. The first is usually created during the initial import.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</details>
 {% endblock %}

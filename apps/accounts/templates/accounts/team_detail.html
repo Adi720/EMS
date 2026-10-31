@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ member|display_name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'team:list' %}">Team</a></li><li class="breadcrumb-item active" aria-current="page">{{ member|display_name }}</li></ol></nav>
+
+<div class="ems-page-header">
+  <div class="d-flex align-items-center gap-3 min-w-0">
+    <span class="ems-avatar" style="width:52px;height:52px;font-size:1.05rem" aria-hidden="true">{{ member|initials }}</span>
+    <div class="min-w-0">
+      <h1 class="ems-page-title text-truncate">{{ member|display_name }}</h1>
+      <p class="ems-page-subtitle">{{ member.username }}{% if member.email %} · {{ member.email }}{% else %} · no email (no Saturday reminder){% endif %}
+        · {% if member.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Deactivated</span>{% endif %}</p>
+    </div>
+  </div>
+  {% if manageable %}
+  <div class="ems-page-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'team:edit' member.pk %}">{% icon "pencil" %}Edit</a>
+    <a class="btn btn-outline-secondary" href="{% url 'team:password' member.pk %}">{% icon "key" %}Reset password</a>
+  </div>
+  {% endif %}
+</div>
+{% if not manageable %}<div class="alert alert-info">{% icon "shield-lock" %}<div class="alert-body">This account has coordinator or administrator rights, so it is managed by the system administrator.</div></div>{% endif %}
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <section class="card mb-4">
+      <div class="ems-card-header">
+        <h2 class="ems-section-title">Saints ({{ saints|length }})</h2>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'contacts:list' %}?caller={{ member.pk }}">Open in Saints</a>
+      </div>
+      {% if saints %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead><tr><th>Saint</th><th>Area</th><th>Since</th></tr></thead>
+          <tbody>
+            {% for a in saints %}<tr><td><a href="{% url 'contacts:detail' a.contact.pk %}">{{ a.contact.full_name }}</a></td><td>{{ a.contact.area }}</td><td class="ems-num">{{ a.effective_from|date:"d M Y" }}</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">{% url 'allocations:change' as assign_url %}{% include "includes/ui/empty_state.html" with icon="people" title="No Saints assigned" text="Assign Saints on the Assignments page." action_url=assign_url action_label="Assign Saints" only %}</div>
+      {% endif %}
+    </section>
+  </div>
+  <div class="col-lg-5">
+    {% if week %}
+    <section class="card mb-4">
+      <div class="ems-card-header"><h2 class="ems-section-title">{{ week.session }}</h2></div>
+      <div class="card-body">{% include "includes/ui/progress.html" with label="Calls completed" value=week.done total=week.assigned unit="calls" only %}</div>
+    </section>
+    {% endif %}
+    <section class="card mb-4">
+      <div class="ems-card-header"><h2 class="ems-section-title">Recent calls</h2></div>
+      <ul class="list-group list-group-flush small">
+        {% for a in attempts %}
+        <li class="list-group-item d-flex justify-content-between gap-2">
+          <span class="min-w-0 text-truncate">{{ a.task.contact.full_name }} · {{ a.get_outcome_display }}</span>
+          <span class="ems-muted text-nowrap">{{ a.attempted_at|date:"d M H:i" }}</span>
+        </li>
+        {% empty %}<li class="list-group-item ems-muted">No calls recorded yet.</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% if manageable %}
+    <section class="card border-{% if member.is_active %}danger{% else %}success{% endif %}-subtle">
+      <div class="card-body">
+        {% if member.is_active %}
+          <h2 class="ems-section-title mb-1">Deactivate account</h2>
+          <p class="small ems-muted">They will no longer be able to log in. {% if saints %}Their {{ saints|length }} Saint{{ saints|pluralize }} will be left without a caller, and calls they have not made yet this week are withdrawn. Calls already made stay credited to them.{% endif %} All history is kept.</p>
+          <form method="post" action="{% url 'team:active' member.pk 'deactivate' %}" onsubmit="return confirm('Deactivate {{ member|display_name|escapejs }}?{% if saints %} {{ saints|length }} Saint(s) will be left without a caller.{% endif %}');">
+            {% csrf_token %}<button class="btn btn-outline-danger btn-sm">{% icon "person-x" %}Deactivate</button>
+          </form>
+        {% else %}
+          <h2 class="ems-section-title mb-1">Reactivate account</h2>
+          <p class="small ems-muted">They can log in again. Assign Saints to them afterwards.</p>
+          <form method="post" action="{% url 'team:active' member.pk 'activate' %}">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm">{% icon "person-check" %}Reactivate</button></form>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

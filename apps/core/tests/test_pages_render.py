@@ -59,6 +59,14 @@ def test_coordinator_pages_render(client, coordinator, data):
         reverse("audit:event_list"),
         reverse("imports:list"),
         reverse("imports:upload"),
+        reverse("team:list"),
+        reverse("team:create"),
+        reverse("team:detail", args=[data["task"].caller_id]),
+        reverse("team:edit", args=[data["task"].caller_id]),
+        reverse("team:password", args=[data["task"].caller_id]),
+        reverse("contacts:list") + "?status=active&q=Synthetic",
+        reverse("contacts:list") + "?q=no-such-saint",
+        reverse("allocations:change") + "?kind=move_all&from_caller=" + str(data["task"].caller_id),
         reverse("imports:mapping", args=[batch.pk]),
     ]
     for url in urls:

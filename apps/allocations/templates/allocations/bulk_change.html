@@ -1,9 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Change allocations{% endblock %}
+{% block title %}Assign or move Saints{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Allocations</a></li><li class="breadcrumb-item active">Change</li></ol></nav>
-<h1 class="h3 mb-3">Change allocations</h1>
-<p class="text-body-secondary">Nothing changes until you review the preview and apply it.</p>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active" aria-current="page">Assign or move</li></ol></nav>
+{% include "includes/ui/page_header.html" with title="Assign or move Saints" subtitle="Choose what to change. Nothing is saved until you review the preview and apply it." only %}
 
 <form method="post" novalidate>
   {% csrf_token %}

@@ -17,6 +17,7 @@ class ChangeType(models.TextChoices):
     ROTATE = "rotate", "Rotate lists"
     INDIVIDUAL = "individual", "Individual reassignment"
     STATUS_CHANGE = "status_change", "Contact status change"
+    CALLER_DEACTIVATED = "caller_deactivated", "Caller deactivated"
 
 
 class AllocationCycle(models.Model):

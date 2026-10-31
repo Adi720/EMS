@@ -559,6 +559,29 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 .ems-checklist__title { font-weight: 600; margin-bottom: 0.15rem; }
 .ems-checklist__text { color: var(--ems-muted); font-size: 0.875rem; margin-bottom: 0; }
 
+/* ---- Facts and timelines --------------------------------------------------------- */
+
+.ems-facts dt { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ems-muted); margin-bottom: 0.15rem; }
+.ems-facts dd { margin-bottom: 0; }
+
+.ems-timeline { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 2px solid var(--ems-border); }
+.ems-timeline__item { position: relative; padding: 0 0 1.1rem 0.6rem; }
+.ems-timeline__item:last-child { padding-bottom: 0; }
+.ems-timeline__item::before {
+  content: "";
+  position: absolute;
+  left: calc(-1.1rem - 6px);
+  top: 0.4rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ems-surface);
+  border: 2px solid var(--ems-accent);
+}
+
+.nav-tabs { --bs-nav-tabs-border-color: var(--ems-border); --bs-nav-tabs-link-active-color: var(--ems-text); --bs-nav-tabs-link-active-bg: var(--ems-surface); --bs-nav-tabs-link-active-border-color: var(--ems-border) var(--ems-border) var(--ems-surface); --bs-nav-link-color: var(--ems-muted); --bs-nav-link-hover-color: var(--ems-text); }
+.nav-tabs .nav-link { font-weight: 550; font-size: 0.9rem; }
+
 /* ---- Quick actions ------------------------------------------------------------- */
 
 .ems-action {

@@ -1,14 +1,20 @@
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import Count, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views import View
 from django.views.generic import DetailView, FormView, ListView
 
 from apps.allocations.models import Allocation
-from apps.allocations.services import AllocationError, assign_individual, callers_queryset, current_allocation
+from apps.allocations.services import (
+    AllocationError,
+    assign_individual,
+    callers_queryset,
+    current_allocation,
+    unallocated_active_contacts,
+)
 from apps.audit.services import events_for, log_event
 from apps.calling.models import CallTask
 from apps.core.exports import export_response
@@ -73,22 +79,31 @@ class ContactListView(CoordinatorRequiredMixin, ListView):
             contact.caller_label = caller_label(contact)
         params = self.request.GET.copy()
         params.pop("page", None)
+        status_params = params.copy()
+        status_params.pop("status", None)
+        counts = dict(Contact.objects.order_by().values_list("status").annotate(n=Count("id")))
         context.update(
             filter_form=self.filter_form,
-            callers=callers_queryset(),
+            callers=callers_queryset().order_by("first_name", "last_name", "username"),
             statuses=ContactStatus.choices,
+            status_tabs=[("", "All", sum(counts.values()))]
+            + [(value, label, counts.get(value, 0)) for value, label in ContactStatus.choices],
+            selected_status=self.request.GET.get("status", ""),
+            status_querystring=status_params.urlencode(),
             querystring=params.urlencode(),
-            total=self.get_queryset().count(),
+            total=context["paginator"].count if context.get("paginator") else len(context["object_list"]),
+            active_count=counts.get(ContactStatus.ACTIVE, 0),
+            unallocated_count=unallocated_active_contacts().count(),
+            areas=Contact.objects.order_by("area").values_list("area", flat=True).distinct()[:300],
+            has_filters=any(self.request.GET.get(k) for k in ("q", "area", "caller", "status")),
         )
         return context
 
 
 class ContactCreateForm(ContactForm):
-    allocate_to = forms.ModelChoiceField(
-        label="Allocate to caller", queryset=callers_queryset(), required=False
-    )
+    allocate_to = forms.ModelChoiceField(label="Caller", queryset=callers_queryset(), required=False)
     allocation_start = forms.DateField(
-        label="Allocation start date",
+        label="Caller from date",
         required=False,
         widget=DateInput(),
         help_text="When the caller becomes responsible. Not the registration date.",
@@ -115,7 +130,7 @@ class ContactCreateView(CoordinatorRequiredMixin, FormView):
                 actor=self.request.user,
                 reason="Allocated when the contact was created",
             )
-        messages.success(self.request, f"Contact {contact} created.")
+        messages.success(self.request, f"{contact} added to the Saints directory.")
         return redirect("contacts:detail", pk=contact.pk)
 
 
@@ -138,7 +153,7 @@ class ContactUpdateView(CoordinatorRequiredMixin, FormView):
 
     def form_valid(self, form):
         _, changed = services.update_contact(self.contact, form.contact_data(), self.request.user)
-        messages.success(self.request, "Contact saved." if changed else "No changes to save.")
+        messages.success(self.request, "Saved." if changed else "No changes to save.")
         return redirect("contacts:detail", pk=self.contact.pk)
 
 
@@ -227,7 +242,7 @@ class ContactReassignView(CoordinatorRequiredMixin, View):
             except AllocationError as exc:
                 messages.error(request, str(exc))
             else:
-                messages.success(request, f"{contact} is now allocated to {form.cleaned_data['caller']}.")
+                messages.success(request, f"{contact} is now with {form.cleaned_data['caller']}.")
                 return redirect("contacts:detail", pk=pk)
         view = ContactDetailView(request=request, kwargs={"pk": pk})
         view.object = contact

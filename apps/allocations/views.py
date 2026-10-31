@@ -1,10 +1,12 @@
 from django.contrib import messages
+from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
 from apps.accounts.models import User
+from apps.calling.models import CallTask, EmsSession, SessionStatus, TaskStatus
 from apps.contacts.models import Contact, ContactStatus
 from apps.contacts.views import caller_label, contact_queryset, filter_contacts
 from apps.core.permissions import CoordinatorRequiredMixin
@@ -26,8 +28,29 @@ class AllocationHomeView(CoordinatorRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        counts = services.caller_list_counts()
+        session = EmsSession.objects.filter(status=SessionStatus.OPEN).order_by("session_date").first()
+        pending = {}
+        if session:
+            pending = dict(
+                CallTask.objects.filter(session=session, status=TaskStatus.OPEN, attempt_count=0)
+                .values_list("caller")
+                .annotate(n=Count("id"))
+            )
+        largest = max((n for _, n in counts), default=0)
+        total = sum(n for _, n in counts)
         context.update(
-            caller_counts=services.caller_list_counts(),
+            caller_cards=[
+                {
+                    "user": user,
+                    "count": n,
+                    "share": round(100 * n / largest) if largest else 0,
+                    "pending": pending.get(user.pk, 0) if session else None,
+                }
+                for user, n in counts
+            ],
+            average=round(total / len(counts), 1) if counts else 0,
+            session=session,
             unallocated=services.unallocated_active_contacts().order_by("full_name"),
             cycle=services.active_cycle(),
             cycles=AllocationCycle.objects.all()[:12],
@@ -70,6 +93,9 @@ class BulkChangeView(CoordinatorRequiredMixin, View):
 
     def get(self, request):
         initial = {"kind": request.GET.get("kind", BulkKind.ASSIGN)}
+        for field in ("from_caller", "to_caller", "caller_a", "caller_b"):
+            if request.GET.get(field, "").isdigit():
+                initial[field] = int(request.GET[field])
         if request.GET.get("cycle"):
             cycle = AllocationCycle.objects.filter(pk=request.GET["cycle"]).first()
             if cycle:

@@ -1,68 +1,120 @@
 {% extends "base.html" %}
-{% block title %}Contacts{% endblock %}
+{% load ui %}
+{% block title %}Saints{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">Contacts <span class="text-body-secondary fs-6">({{ total }})</span></h1>
-  <div class="d-flex gap-2">
-    <a class="btn btn-primary" href="{% url 'contacts:create' %}">Add contact</a>
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">Saints Directory</h1>
+    <p class="ems-page-subtitle">{{ active_count }} active Saint{{ active_count|pluralize }}{% if unallocated_count %} · <a href="?caller=none&amp;status=active">{{ unallocated_count }} without a caller</a>{% endif %}</p>
+  </div>
+  <div class="ems-page-actions">
     <div class="dropdown">
-      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Export</button>
+      <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% icon "download" %}Export</button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=csv">CSV</a></li>
-        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx">Excel</a></li>
+        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Excel</a></li>
+        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=csv">{% icon "filetype-csv" %}CSV</a></li>
         <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item small" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx&amp;include_dnc=1">Excel incl. Do not call</a></li>
+        <li><a class="dropdown-item small" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx&amp;include_dnc=1">{% icon "exclamation-triangle" %}Excel including Do not call</a></li>
       </ul>
     </div>
+    <a class="btn btn-outline-secondary" href="{% url 'imports:list' %}">{% icon "file-earmark-spreadsheet" %}Import Excel</a>
+    <a class="btn btn-primary" href="{% url 'contacts:create' %}">{% icon "person-plus" %}Add Saint</a>
   </div>
 </div>
 
-<form method="get" class="row g-2 mb-3" role="search">
-  <div class="col-12 col-md-4">
-    <label class="visually-hidden" for="q">Search</label>
-    <input class="form-control" id="q" name="q" value="{{ filter_form.data.q|default:'' }}" placeholder="Name, phone or area">
+<ul class="nav nav-pills flex-nowrap overflow-auto gap-1 mb-3 pb-1" aria-label="Filter by status">
+  {% for value, label, count in status_tabs %}
+  <li class="nav-item"><a class="nav-link text-nowrap py-1 px-3{% if value == selected_status %} active{% endif %}"{% if value == selected_status %} aria-current="page"{% endif %} href="?{% if status_querystring %}{{ status_querystring }}&amp;{% endif %}status={{ value }}">{{ label }} <span class="ems-num opacity-75">{{ count }}</span></a></li>
+  {% endfor %}
+</ul>
+
+<form method="get" class="card card-body mb-3" role="search">
+  <input type="hidden" name="status" value="{{ selected_status }}">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-5">
+      <label class="form-label small" for="q">Search</label>
+      <div class="input-group">
+        <span class="input-group-text bg-transparent">{% icon "search" %}</span>
+        <input class="form-control" id="q" name="q" type="search" value="{{ filter_form.data.q|default:'' }}" placeholder="Name or mobile number">
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <label class="form-label small" for="area">Area</label>
+      <input class="form-control" id="area" name="area" list="area-options" value="{{ filter_form.data.area|default:'' }}" placeholder="Any area">
+      <datalist id="area-options">{% for a in areas %}<option value="{{ a }}">{% endfor %}</datalist>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label class="form-label small" for="caller">Caller</label>
+      <select class="form-select" id="caller" name="caller">
+        <option value="">Any caller</option>
+        <option value="none" {% if filter_form.data.caller == "none" %}selected{% endif %}>No caller</option>
+        {% for c in callers %}<option value="{{ c.pk }}" {% if filter_form.data.caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-lg-2 d-flex gap-2">
+      <button class="btn btn-primary flex-fill">Apply</button>
+      {% if has_filters %}<a class="btn btn-outline-secondary" href="{% url 'contacts:list' %}" aria-label="Clear filters">{% icon "x-lg" %}</a>{% endif %}
+    </div>
   </div>
-  <div class="col-6 col-md-2">
-    <label class="visually-hidden" for="status">Status</label>
-    <select class="form-select" id="status" name="status">
-      <option value="">All statuses</option>
-      {% for value, label in statuses %}<option value="{{ value }}" {% if filter_form.data.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </div>
-  <div class="col-6 col-md-2">
-    <label class="visually-hidden" for="area">Area</label>
-    <input class="form-control" id="area" name="area" value="{{ filter_form.data.area|default:'' }}" placeholder="Area">
-  </div>
-  <div class="col-8 col-md-3">
-    <label class="visually-hidden" for="caller">Caller</label>
-    <select class="form-select" id="caller" name="caller">
-      <option value="">All callers</option>
-      <option value="none" {% if filter_form.data.caller == "none" %}selected{% endif %}>Unallocated</option>
-      {% for c in callers %}<option value="{{ c.pk }}" {% if filter_form.data.caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
-    </select>
-  </div>
-  <div class="col-4 col-md-1"><button class="btn btn-secondary w-100">Filter</button></div>
 </form>
 
 {% if object_list %}
-<div class="table-responsive">
-  <table class="table table-hover align-middle bg-body">
-    <thead><tr><th>Name</th><th>Phone</th><th>Area</th><th>Caller</th><th>Status</th></tr></thead>
-    <tbody>
-      {% for c in object_list %}
-      <tr>
-        <td><a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a></td>
-        <td class="text-nowrap">{{ c.phone_display }}</td>
-        <td>{{ c.area }}</td>
-        <td>{{ c.caller_label|default:"—" }}</td>
-        <td>{% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="small ems-muted mb-2">{{ total }} Saint{{ total|pluralize }}{% if has_filters %} match{{ total|pluralize:"es," }} the filters{% endif %}</div>
+
+{# Desktop / tablet: table #}
+<div class="card d-none d-md-block">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>Saint</th><th>Mobile</th><th>Area</th><th>Assigned caller</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <tbody>
+        {% for c in object_list %}
+        <tr>
+          <td><a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a></td>
+          <td class="ems-num text-nowrap">{{ c.phone_display }}</td>
+          <td>{{ c.area }}</td>
+          <td>{% if c.caller_label %}{{ c.caller_label }}{% else %}<span class="ems-muted">No caller</span>{% endif %}</td>
+          <td>{% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}</td>
+          <td class="text-end">
+            <div class="dropdown">
+              <button class="ems-icon-btn ms-auto" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions for {{ c.full_name }}">{% icon "three-dots" %}</button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'contacts:detail' c.pk %}">{% icon "person-vcard" %}View details</a></li>
+                <li><a class="dropdown-item" href="{% url 'contacts:edit' c.pk %}">{% icon "pencil" %}Edit</a></li>
+                <li><a class="dropdown-item" href="{% url 'contacts:detail' c.pk %}#change-status">{% icon "toggle-on" %}Change status</a></li>
+              </ul>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Phone: cards #}
+<div class="d-md-none d-grid gap-2">
+  {% for c in object_list %}
+  <a class="card text-decoration-none" href="{% url 'contacts:detail' c.pk %}">
+    <div class="card-body py-3">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div class="min-w-0">
+          <div class="fw-semibold text-body text-truncate">{{ c.full_name }}</div>
+          <div class="small ems-muted">{{ c.area }} · <span class="ems-num">{{ c.phone_display }}</span></div>
+          <div class="small ems-muted">{% icon "headset" %} {{ c.caller_label|default:"No caller" }}</div>
+        </div>
+        {% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
 </div>
 {% include "includes/pagination.html" %}
+
+{% elif has_filters %}
+  {% url 'contacts:list' as all_url %}
+  {% include "includes/ui/empty_state.html" with icon="search" title="No Saints match these filters" text="Try a shorter name, part of the mobile number, or clear the filters." action_url=all_url action_label="Clear filters" only %}
 {% else %}
-<div class="alert alert-secondary">No contacts match. {% if not querystring %}<a href="{% url 'contacts:create' %}">Add the first contact</a> or <a href="{% url 'imports:upload' %}">import the workbook</a>.{% endif %}</div>
+  {% url 'imports:list' as import_url %}{% url 'contacts:create' as create_url %}
+  {% include "includes/ui/empty_state.html" with icon="people" title="No Saints yet" text="Import the EMS workbook to bring in everyone collected at the stall, or add Saints one by one." action_url=import_url action_label="Import Excel" action_icon="file-earmark-spreadsheet" secondary_url=create_url secondary_label="Add a Saint" only %}
 {% endif %}
 {% endblock %}

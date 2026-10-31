@@ -93,7 +93,7 @@
 {# B. Key metrics: real values only ("—" when there is no congregation yet) #}
 <section class="row g-3 mb-4" aria-label="Key figures">
   <div class="col-6 col-md-4 col-xl-2">{% url 'contacts:list' as saints_url %}{% include "includes/ui/stat_card.html" with label="Active Saints" value=ov.active_saints icon="people" tone="accent" url=saints_url|add:"?status=active" only %}</div>
-  <div class="col-6 col-md-4 col-xl-2">{% url 'allocations:home' as team_url %}{% include "includes/ui/stat_card.html" with label="Active callers" value=ov.caller_count icon="headset" tone="accent" url=team_url only %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% url 'team:list' as team_url %}{% include "includes/ui/stat_card.html" with label="Active callers" value=ov.caller_count icon="headset" tone="accent" url=team_url only %}</div>
   <div class="col-6 col-md-4 col-xl-2">{% if ov.unallocated %}{% with note=ov.unallocated|stringformat:"d"|add:" without a caller" %}{% include "includes/ui/stat_card.html" with label="Assigned Saints" value=ov.allocated icon="diagram-3" tone="warning" note=note only %}{% endwith %}{% else %}{% include "includes/ui/stat_card.html" with label="Assigned Saints" value=ov.allocated icon="diagram-3" tone="info" only %}{% endif %}</div>
   <div class="col-6 col-md-4 col-xl-2">{% include "includes/ui/stat_card.html" with label="Calls completed" value=summary.completed icon="check2-circle" tone="accent" only %}</div>
   <div class="col-6 col-md-4 col-xl-2">{% include "includes/ui/stat_card.html" with label="Pending calls" value=summary.not_attempted icon="hourglass-split" tone="warning" only %}</div>
@@ -186,7 +186,7 @@
           <a class="ems-action" href="{% url 'calling:session_detail' week_session.pk %}">{% icon "list-check" %}<span>This week's calls<small>{{ week_session }}</small></span></a>
         {% endif %}
         <a class="ems-action" href="{% url 'contacts:create' %}">{% icon "person-plus" %}<span>Add Saint<small>One person, with their caller</small></span></a>
-        {% if user.is_superuser %}<a class="ems-action" href="{% url 'admin:accounts_user_add' %}">{% icon "headset" %}<span>Add caller<small>Create a login in Django Admin</small></span></a>{% endif %}
+        <a class="ems-action" href="{% url 'team:create' %}">{% icon "headset" %}<span>Add caller<small>A login for someone who makes calls</small></span></a>
         <a class="ems-action" href="{% if ov.staged_import %}{% url 'imports:detail' ov.staged_import.pk %}{% else %}{% url 'imports:upload' %}{% endif %}">{% icon "file-earmark-spreadsheet" %}<span>Import Excel<small>{% if ov.staged_import %}Continue import #{{ ov.staged_import.pk }}{% else %}Upload the EMS workbook{% endif %}</small></span></a>
         <a class="ems-action" href="{% url 'allocations:home' %}">{% icon "diagram-3" %}<span>Manage assignments<small>Who calls whom</small></span></a>
         <a class="ems-action" href="{% url 'reports:monthly' %}">{% icon "bar-chart-line" %}<span>Monthly report<small>Totals and exports</small></span></a>
