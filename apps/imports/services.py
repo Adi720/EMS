@@ -504,6 +504,52 @@ def set_caller_mapping(batch, name, choice, actor, save_alias=False):
     validate_batch(batch)
 
 
+# --- Review summary (what the coordinator sees before confirming) ----------------------
+
+ISSUE_GROUPS = {
+    "duplicates": {"duplicate_in_file", "duplicate_in_database"},
+    "invalid_phones": {"invalid_phone", "missing_phone"},
+    "missing_fields": {"missing_name", "missing_area", "missing_date", "invalid_date"},
+    "unmatched_callers": {"caller_unmatched", "caller_ambiguous", "caller_blank"},
+}
+
+
+def review_summary(batch):
+    """Counts for the review step and a preview of what committing would do."""
+    rows = list(batch.rows.all())
+    counts = Counter(r.status for r in rows)
+    issues = {group: 0 for group in ISSUE_GROUPS}
+    for row in rows:
+        if row.status == RowStatus.SKIPPED:
+            continue
+        codes = {i["code"] for i in row.issues if i["level"] == "error"}
+        for group, members in ISSUE_GROUPS.items():
+            if codes & members:
+                issues[group] += 1
+    importable = [r for r in rows if r.status in {RowStatus.READY, RowStatus.WARNING}]
+    to_create = [r for r in importable if r.action != RowAction.LINK]
+    users = {
+        u.pk: u for u in User.objects.filter(pk__in={r.values.get("caller_id") for r in to_create} - {None})
+    }
+    per_caller = Counter(
+        str(users[r.values["caller_id"]]) for r in to_create if r.values.get("caller_id") in users
+    )
+    return {
+        "total": len(rows),
+        "ready": counts.get(RowStatus.READY, 0),
+        "warning": counts.get(RowStatus.WARNING, 0),
+        "needs": counts.get(RowStatus.NEEDS_RESOLUTION, 0),
+        "already": counts.get(RowStatus.ALREADY_IMPORTED, 0),
+        "skipped": counts.get(RowStatus.SKIPPED, 0),
+        "issues": issues,
+        "to_create": len(to_create),
+        "to_link": counts.get(RowStatus.ALREADY_IMPORTED, 0) + (len(importable) - len(to_create)),
+        "to_allocate": sum(per_caller.values()),
+        "unallocated": len(to_create) - sum(per_caller.values()),
+        "per_caller": sorted(per_caller.items(), key=lambda kv: kv[0].lower()),
+    }
+
+
 # --- Caller accounts from the workbook ------------------------------------------------
 
 

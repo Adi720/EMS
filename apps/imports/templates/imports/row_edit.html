@@ -1,29 +1,39 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Row {{ row.row_number }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item"><a href="{% url 'imports:detail' batch.pk %}">#{{ batch.pk }}</a></li><li class="breadcrumb-item active">Row {{ row.row_number }}</li></ol></nav>
-<h1 class="h3">Row {{ row.row_number }} <span class="badge fs-6 text-bg-secondary">{{ row.get_status_display }}</span></h1>
-{% for i in row.issues %}<div class="alert {% if i.level == 'error' %}alert-danger{% else %}alert-warning{% endif %} py-2">{{ i.message }}</div>{% endfor %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item"><a href="{% url 'imports:detail' batch.pk %}">#{{ batch.pk }}</a></li><li class="breadcrumb-item active" aria-current="page">Row {{ row.row_number }}</li></ol></nav>
+{% include "includes/ui/stepper.html" with step=3 only %}
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">Row {{ row.row_number }}{% if row.values.full_name %} · {{ row.values.full_name }}{% endif %}</h1>
+    <p class="ems-page-subtitle"><span class="badge text-bg-{% if row.status == 'ready' %}success{% elif row.status == 'warning' %}warning{% elif row.status == 'needs_resolution' %}danger{% elif row.status == 'already_imported' %}info{% else %}secondary{% endif %}">{{ row.get_status_display }}</span></p>
+  </div>
+</div>
+{% for i in row.issues %}<div class="alert {% if i.level == 'error' %}alert-danger{% else %}alert-warning{% endif %}">{% if i.level == "error" %}{% icon "exclamation-octagon" %}{% else %}{% icon "exclamation-triangle" %}{% endif %}<div class="alert-body">{{ i.message }}</div></div>{% endfor %}
 
-<div class="row g-3">
+<div class="row g-4">
   <div class="col-lg-5">
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Original values (kept unchanged)</div>
-      <table class="table table-sm mb-0 raw-values"><tbody>{% for k, v in row.raw_values.items %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</tbody></table>
-    </div>
+    <section class="card mb-3">
+      <div class="ems-card-header"><h2 class="ems-section-title">As written in the workbook</h2></div>
+      <div class="table-responsive"><table class="table table-sm raw-values"><tbody>{% for k, v in row.raw_values.items %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</tbody></table></div>
+    </section>
     {% if candidates %}
-    <div class="card mb-3">
-      <div class="card-header fw-semibold">Existing contacts with this phone</div>
-      <ul class="list-group list-group-flush">{% for c in candidates %}<li class="list-group-item"><a href="{% url 'contacts:detail' c.pk %}" target="_blank" rel="noopener">{{ c.full_name }}</a> — {{ c.area }} · {{ c.get_status_display }}</li>{% endfor %}</ul>
-    </div>
+    <section class="card mb-3">
+      <div class="ems-card-header"><h2 class="ems-section-title">Saints already in the app with this mobile</h2></div>
+      <ul class="list-group list-group-flush">{% for c in candidates %}<li class="list-group-item"><a href="{% url 'contacts:detail' c.pk %}" target="_blank" rel="noopener">{{ c.full_name }}</a> · {{ c.area }} · {{ c.get_status_display }}</li>{% endfor %}</ul>
+    </section>
     {% endif %}
   </div>
   <div class="col-lg-7">
-    <form method="post" class="card card-body" novalidate>
+    <form method="post" class="card" novalidate>
       {% csrf_token %}
-      <p class="small text-body-secondary">Corrections apply to this import only; the original values above stay on record. Leave a field blank to use the workbook value.</p>
-      {% include "includes/form_fields.html" %}
-      <div class="d-flex gap-2"><button class="btn btn-primary">Save and revalidate</button><a class="btn btn-outline-secondary" href="{% url 'imports:detail' batch.pk %}">Back</a></div>
+      <div class="ems-card-header"><h2 class="ems-section-title">Fix this row</h2></div>
+      <div class="card-body">
+        <p class="small ems-muted">Corrections apply to this import only — the workbook values stay on record. Leave a box empty to keep the workbook value.</p>
+        {% include "includes/form_fields.html" %}
+        <div class="d-flex gap-2"><button class="btn btn-primary">{% icon "check-lg" %}Save and re-check</button><a class="btn btn-outline-secondary" href="{% url 'imports:detail' batch.pk %}">Back</a></div>
+      </div>
     </form>
   </div>
 </div>

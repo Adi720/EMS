@@ -15,7 +15,7 @@ My calls). Saints never log in.
    boxes empty) → check the column mapping → **Validate rows**. On the review page:
    - **Create caller accounts**: callers in the workbook without an account are listed with a
      suggested username. Untick any that are just a different spelling of an existing person,
-     then **Create ticked accounts**. The usernames and passwords are shown **once** — copy,
+     then **Create ticked logins**. The usernames and passwords are shown **once** — copy,
      print or download them and share each one privately.
    - Map any remaining caller names, and **Resolve** the rows marked *Needs resolution*
      (fix, link to an existing Saint, create new, or skip with a reason).
@@ -29,7 +29,7 @@ My calls). Saints never log in.
 | When | Who | What to do |
 |---|---|---|
 | Saturday morning | Coordinator | **Dashboard → Start calling for EMS Congregation (date)**. One click: it creates the coming Sunday, builds every caller's list from their contacts, and closes last week's calling. |
-| Saturday | Callers | **My calls** → tap **📞 Call** → after the call tap one button: **Yes**, **Not Possible**, **Will Try** or **Call Not Connected**. Called again later? Just tap again — the latest answer counts. Use *Add notes or a call-back time* when needed. |
+| Saturday | Callers | **My calls** → tap **📞 Call** → after the call tap one button: **Yes**, **Not Possible**, **Will Try** or **Call Not Connected**. Called again later? Just tap again — the latest answer counts. Use *Add a note or call-back time* when needed. The **Pending** chip shows who is left. |
 | During Saturday | Coordinator | **Dashboard** shows live progress per caller: completed, not yet attempted, Yes / Not Possible / Will Try / Unknown. |
 | After Sunday | Coordinator | Open the congregation (*Details & exports*) → **Export** the summary or call list. Nothing else is required: next Saturday's click closes this week automatically. |
 

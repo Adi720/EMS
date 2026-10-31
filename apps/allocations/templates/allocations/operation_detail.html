@@ -1,22 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Allocation change{% endblock %}
+{% load ui %}
+{% block title %}Assignment change{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active">Change #{{ operation.pk }}</li></ol></nav>
-<h1 class="h3">{{ operation.get_kind_display }}</h1>
-<dl class="row">
-  <dt class="col-sm-3">Effective date</dt><dd class="col-sm-9">{{ operation.effective_date|date:"d M Y" }}</dd>
-  <dt class="col-sm-3">Applied</dt><dd class="col-sm-9">{{ operation.performed_at|date:"d M Y H:i" }} by {{ operation.performed_by }}</dd>
-  <dt class="col-sm-3">Cycle</dt><dd class="col-sm-9">{{ operation.cycle|default:"—" }}</dd>
-  <dt class="col-sm-3">Reason</dt><dd class="col-sm-9">{{ operation.reason|default:"—" }}</dd>
-  <dt class="col-sm-3">Calls in open congregations</dt><dd class="col-sm-9">{% for k, v in tasks.items %}{{ v }} {{ k }}{% if not forloop.last %}, {% endif %}{% empty %}no changes{% endfor %}</dd>
-</dl>
-<div class="card">
-  <div class="card-header fw-semibold">{{ moves|length }} contact(s)</div>
-  <div class="table-responsive">
-    <table class="table table-sm mb-0">
-      <thead><tr><th>Contact</th><th>From</th><th>To</th></tr></thead>
-      <tbody>{% for m in moves %}<tr><td>{% if m.contact %}<a href="{% url 'contacts:detail' m.contact.pk %}">{{ m.contact }}</a>{% endif %}</td><td>{{ m.from|default:"Unallocated" }}</td><td>{{ m.to|default:"Unallocated" }}</td></tr>{% endfor %}</tbody>
-    </table>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active" aria-current="page">Change #{{ operation.pk }}</li></ol></nav>
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">{{ operation.get_kind_display }}</h1>
+    <p class="ems-page-subtitle">{{ moves|length }} Saint{{ moves|length|pluralize }} · from {{ operation.effective_date|date:"d M Y" }} · by {{ operation.performed_by|default:"system" }} on {{ operation.performed_at|date:"d M Y, H:i" }}</p>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-4">
+    <section class="card">
+      <div class="card-body">
+        <dl class="ems-facts mb-0 d-grid gap-3">
+          <div><dt>Reason</dt><dd>{{ operation.reason|default:"—" }}</dd></div>
+          <div><dt>Cycle</dt><dd>{{ operation.cycle|default:"—" }}</dd></div>
+          <div><dt>Calls in open congregations</dt><dd>{% for k, v in tasks.items %}{{ v }} {{ k }}{% if not forloop.last %}, {% endif %}{% empty %}No change{% endfor %}</dd></div>
+        </dl>
+      </div>
+    </section>
+  </div>
+  <div class="col-lg-8">
+    <section class="card">
+      <div class="ems-card-header"><h2 class="ems-section-title">Saints</h2></div>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead><tr><th>Saint</th><th>From</th><th>To</th></tr></thead>
+          <tbody>{% for m in moves %}<tr><td>{% if m.contact %}<a href="{% url 'contacts:detail' m.contact.pk %}">{{ m.contact }}</a>{% endif %}</td><td>{{ m.from|default:"No caller" }}</td><td class="fw-semibold">{{ m.to|default:"No caller" }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}

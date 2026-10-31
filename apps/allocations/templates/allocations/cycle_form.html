@@ -1,13 +1,16 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}New allocation cycle{% endblock %}
 {% block content %}
-<div class="row justify-content-center"><div class="col-lg-6">
-  <h1 class="h3">New allocation cycle</h1>
-  <p class="text-body-secondary">Cycles normally last about three months. After creating the cycle you will plan the rotation (swaps, whole-list moves or a rotation), which is previewed before it is applied.</p>
-  <form method="post" class="card card-body" novalidate>
-    {% csrf_token %}
-    {% include "includes/form_fields.html" %}
-    <div class="d-flex gap-2"><button class="btn btn-primary">Create cycle</button><a class="btn btn-outline-secondary" href="{% url 'allocations:home' %}">Cancel</a></div>
-  </form>
-</div></div>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'allocations:home' %}">Assignments</a></li><li class="breadcrumb-item active" aria-current="page">New cycle</li></ol></nav>
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    {% include "includes/ui/page_header.html" with title="New allocation cycle" subtitle="Cycles usually last about three months. After creating one, plan the rotation (swaps or moves); every change is previewed before it is applied." only %}
+    <form method="post" class="card card-body" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      <div class="d-flex gap-2"><button class="btn btn-primary">{% icon "calendar-plus" %}Create cycle</button><a class="btn btn-outline-secondary" href="{% url 'allocations:home' %}">Cancel</a></div>
+    </form>
+  </div>
+</div>
 {% endblock %}

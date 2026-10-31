@@ -14,6 +14,7 @@
   --ems-surface-3: #e9edf2;     /* hover */
   --ems-border: #e3e7ec;
   --ems-border-strong: #cfd6de;
+  --ems-input-border: #838d9c;  /* form fields: 3:1 against surface and page (WCAG 1.4.11) */
 
   /* Text */
   --ems-text: #0f172a;
@@ -69,6 +70,7 @@
   --ems-surface-3: #222b36;
   --ems-border: #2a323d;
   --ems-border-strong: #3a4452;
+  --ems-input-border: #5f6b7c;
 
   --ems-text: #e6eaf0;
   --ems-text-rgb: 230, 234, 240;
@@ -84,7 +86,7 @@
 
   --ems-nav-bg: #0a0f15;
   --ems-nav-text: #c3cbd8;
-  --ems-nav-muted: #6f7b8e;
+  --ems-nav-muted: #7d899c;
 
   --ems-success: #4ade80;  --ems-success-rgb: 74, 222, 128;   --ems-success-soft: rgba(74, 222, 128, 0.12);  --ems-success-text: #86efac; --ems-success-border: rgba(74, 222, 128, 0.3);
   --ems-warning: #fbbf24;  --ems-warning-rgb: 251, 191, 36;   --ems-warning-soft: rgba(251, 191, 36, 0.12);  --ems-warning-text: #fcd34d; --ems-warning-border: rgba(251, 191, 36, 0.3);

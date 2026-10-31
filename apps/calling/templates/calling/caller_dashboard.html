@@ -1,72 +1,108 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}My calls{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-  <h1 class="h3 mb-0">My calls</h1>
-  {% if sessions|length > 1 %}
-  <form method="get" class="d-flex gap-2">
-    <label class="visually-hidden" for="session">Congregation</label>
-    <select class="form-select" id="session" name="session" onchange="this.form.submit()">
-      {% for s in sessions %}<option value="{{ s.pk }}" {% if s == session %}selected{% endif %}>{{ s }}{% if s.status != "open" %} ({{ s.get_status_display }}){% endif %}</option>{% endfor %}
-    </select>
-    <noscript><button class="btn btn-secondary">Go</button></noscript>
-  </form>
-  {% endif %}
-</div>
-
+<div class="ems-caller">
 {% if not session %}
-  <div class="alert alert-secondary">You have no calls assigned yet. When a coordinator starts calling for the next EMS Congregation, your contacts will appear here.</div>
+  <section class="ems-hero mb-3">
+    <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
+    <h1 class="ems-hero__title">No calls to make yet</h1>
+    {% if assigned_saints %}
+      <p class="ems-hero__text">You look after <strong>{{ assigned_saints }} Saint{{ assigned_saints|pluralize }}</strong>. Your call list for <strong>{{ week_label }}</strong> appears here as soon as your coordinator starts calling — usually on Saturday morning.</p>
+    {% else %}
+      <p class="ems-hero__text">No Saints have been assigned to you yet. Your coordinator will assign them; they will then appear here each week.</p>
+    {% endif %}
+  </section>
+  <div class="ems-empty">
+    <div class="ems-empty__icon">{% icon "telephone" %}</div>
+    <h2 class="ems-empty__title">Nothing to do right now</h2>
+    <p class="ems-empty__text mb-0">Come back when calling has started. Pull down or reload this page to check.</p>
+  </div>
 {% else %}
-  <p class="mb-2"><strong>{{ session }}</strong> · {{ session.get_status_display }}</p>
-  {% include "includes/metric_tiles.html" %}
-
-  <ul class="nav nav-pills mb-3 flex-wrap gap-1">
-    <li class="nav-item"><a class="nav-link {% if not show %}active{% endif %}" href="?session={{ session.pk }}">All ({{ summary.assigned }})</a></li>
-    <li class="nav-item"><a class="nav-link {% if show == 'pending' %}active{% endif %}" href="?session={{ session.pk }}&amp;show=pending">Pending ({{ summary.not_attempted }})</a></li>
-    <li class="nav-item"><a class="nav-link {% if show == 'completed' %}active{% endif %}" href="?session={{ session.pk }}&amp;show=completed">Completed ({{ summary.completed }})</a></li>
-    <li class="nav-item"><a class="nav-link {% if show == 'not_connected' %}active{% endif %}" href="?session={{ session.pk }}&amp;show=not_connected">Not connected</a></li>
-    <li class="nav-item"><a class="nav-link {% if show == 'callback' %}active{% endif %}" href="?session={{ session.pk }}&amp;show=callback">Call back</a></li>
-  </ul>
-
-  {% for task in tasks %}
-  <div class="card mb-2 task-card" id="task-{{ task.pk }}">
-    <div class="card-body p-3">
-      <div class="d-flex justify-content-between align-items-start gap-2">
-        <div>
-          <a class="fw-semibold" href="{% url 'calling:task_detail' task.pk %}">{{ task.contact.full_name }}</a>
-          <div class="small text-body-secondary">{{ task.contact.area }}</div>
-        </div>
-        <div class="text-end">
-          {% if task.attempt_count %}
-            <span class="badge {% if task.latest_outcome == 'yes' %}text-bg-success{% elif task.latest_outcome == 'not_connected' %}text-bg-secondary{% elif task.latest_outcome == 'will_try' %}text-bg-info{% else %}text-bg-danger{% endif %}">{{ task.get_latest_outcome_display }}</span>
-            <div class="small text-body-secondary">{{ task.attempt_count }} attempt{{ task.attempt_count|pluralize }}</div>
-          {% else %}<span class="badge text-bg-warning">Pending</span>{% endif %}
-        </div>
+  <section class="ems-hero mb-3" aria-labelledby="calls-title">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="min-w-0">
+        <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
+        <h1 class="ems-hero__title mb-1" id="calls-title">{{ session.label }}</h1>
+        <div class="small ems-muted">{% if session.is_open %}Calling is open{% else %}{{ session.get_status_display }} — results are read-only{% endif %}</div>
       </div>
-      {% if task.contact.is_do_not_call %}
-        <div class="alert alert-danger small my-2 py-1">Do not call — this person asked not to be contacted.</div>
-      {% else %}
-        <a class="btn btn-outline-primary w-100 my-2" href="tel:{{ task.contact.phone_primary }}">📞 Call {{ task.contact.phone_display }}</a>
-        {% if session.is_open %}
-        <div class="outcome-buttons">
-          {% for value, label in outcomes %}
-          <form method="post" action="{% url 'calling:quick_attempt' task.pk %}">
-            {% csrf_token %}
-            <input type="hidden" name="outcome" value="{{ value }}">
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button class="btn btn-sm {% if value == 'yes' %}btn-success{% elif value == 'not_possible' %}btn-outline-danger{% elif value == 'will_try' %}btn-outline-info{% else %}btn-outline-secondary{% endif %}">{{ label }}</button>
-          </form>
-          {% endfor %}
+      {% if sessions|length > 1 %}
+      <form method="get">
+        <label class="visually-hidden" for="session">Congregation</label>
+        <select class="form-select form-select-sm" id="session" name="session" onchange="this.form.submit()" style="max-width: 11rem">
+          {% for s in sessions %}<option value="{{ s.pk }}" {% if s == session %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+        </select>
+        <noscript><button class="btn btn-sm btn-outline-secondary mt-1">Go</button></noscript>
+      </form>
+      {% endif %}
+    </div>
+    <div class="mt-3">
+      {% include "includes/ui/progress.html" with label="Calls done" value=summary.completed total=summary.assigned unit="" size="lg" only %}
+    </div>
+    <div class="ems-caller__counts mt-3">
+      <div><span class="ems-num">{{ summary.assigned }}</span>Saints</div>
+      <div><span class="ems-num">{{ summary.completed }}</span>Done</div>
+      <div class="{% if summary.not_attempted %}is-pending{% endif %}"><span class="ems-num">{{ summary.not_attempted }}</span>Pending</div>
+      <div><span class="ems-num text-ems-yes">{{ summary.yes }}</span>Yes</div>
+    </div>
+  </section>
+
+  {% if session.is_open and summary.assigned and not summary.not_attempted %}
+    <div class="alert alert-success">{% icon "check-circle" %}<div class="alert-body"><strong>All calls done — thank you for your seva.</strong> You can still update a result if someone calls back.</div></div>
+  {% endif %}
+
+  <nav class="ems-chips mb-3" aria-label="Show">
+    <a class="ems-chip{% if not show %} active{% endif %}" href="?session={{ session.pk }}"{% if not show %} aria-current="page"{% endif %}>All <span>{{ summary.assigned }}</span></a>
+    <a class="ems-chip{% if show == 'pending' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=pending"{% if show == 'pending' %} aria-current="page"{% endif %}>Pending <span>{{ summary.not_attempted }}</span></a>
+    <a class="ems-chip{% if show == 'completed' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=completed"{% if show == 'completed' %} aria-current="page"{% endif %}>Done <span>{{ summary.completed }}</span></a>
+    <a class="ems-chip{% if show == 'not_connected' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=not_connected"{% if show == 'not_connected' %} aria-current="page"{% endif %}>Not connected</a>
+    <a class="ems-chip{% if show == 'callback' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=callback"{% if show == 'callback' %} aria-current="page"{% endif %}>Call back</a>
+  </nav>
+
+  <div class="d-grid gap-3">
+  {% for task in tasks %}
+    <article class="ems-call-card task-card{% if task.attempt_count %} is-done{% endif %}" id="task-{{ task.pk }}" aria-labelledby="name-{{ task.pk }}">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div class="min-w-0">
+          <h2 class="ems-call-card__name" id="name-{{ task.pk }}"><a href="{% url 'calling:task_detail' task.pk %}">{{ task.contact.full_name }}</a></h2>
+          <div class="small ems-muted">{% icon "geo-alt" %} {{ task.contact.area }}{% if task.attempt_count %} · {{ task.attempt_count }} attempt{{ task.attempt_count|pluralize }}{% endif %}</div>
         </div>
-        <a class="small d-inline-block mt-2" href="{% url 'calling:task_detail' task.pk %}">Add notes or a call-back time</a>
+        {% include "includes/ui/outcome_badge.html" with task=task only %}
+      </div>
+
+      {% if task.contact.is_do_not_call %}
+        <div class="alert alert-danger small mt-3 mb-0">{% icon "slash-circle" %}<div class="alert-body">Do not call — this person asked not to be contacted.</div></div>
+      {% else %}
+        <a class="btn btn-primary btn-lg w-100 mt-3 ems-call-btn" href="tel:{{ task.contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ task.contact.phone_display }}</a>
+        {% if session.is_open %}
+          <div class="small ems-muted mt-3 mb-2">{% if task.attempt_count %}Update the result:{% else %}After the call, tap the result:{% endif %}</div>
+          <div class="ems-outcomes">
+            {% for value, label in outcomes %}
+            <form method="post" action="{% url 'calling:quick_attempt' task.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="outcome" value="{{ value }}">
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="ems-outcome ems-outcome--{{ value }}{% if task.latest_outcome == value %} is-current{% endif %}"{% if task.latest_outcome == value %} aria-pressed="true"{% endif %}>
+                {% if value == "yes" %}{% icon "check-circle" %}{% elif value == "not_possible" %}{% icon "x-circle" %}{% elif value == "will_try" %}{% icon "question-circle" %}{% else %}{% icon "telephone-x" %}{% endif %}
+                <span>{{ label }}</span>
+              </button>
+            </form>
+            {% endfor %}
+          </div>
+          <a class="small d-inline-flex align-items-center gap-1 mt-2" href="{% url 'calling:task_detail' task.pk %}">{% icon "pencil-square" %}Add a note or call-back time</a>
         {% endif %}
       {% endif %}
-      {% if task.callback_at %}<div class="small mt-1">Call back: {{ task.callback_at|date:"D d M H:i" }}</div>{% endif %}
-    </div>
-  </div>
+      {% if task.callback_at %}<div class="small mt-2 text-warning-emphasis">{% icon "alarm" %} Call back {{ task.callback_at|date:"D d M, H:i" }}</div>{% endif %}
+    </article>
   {% empty %}
-  <div class="alert alert-secondary">Nothing in this list.</div>
+    <div class="ems-empty">
+      <div class="ems-empty__icon">{% icon "funnel" %}</div>
+      <h2 class="ems-empty__title">Nothing in this list</h2>
+      <p class="ems-empty__text mb-0">{% if show == "pending" %}No pending calls — well done.{% else %}Try another filter above.{% endif %}</p>
+    </div>
   {% endfor %}
-  <p class="small text-body-secondary mt-3">Any recorded attempt counts as completed. "Will Try" is not a confirmation. You can record another attempt at any time; the latest one counts.</p>
+  </div>
+  <p class="small ems-muted mt-3">Any recorded attempt counts as done. <strong>Will Try</strong> is not a confirmation. If you call again later, tap the new result — the latest one counts.</p>
 {% endif %}
+</div>
 {% endblock %}

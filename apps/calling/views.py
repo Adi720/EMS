@@ -10,12 +10,22 @@ from django.views import View
 from django.views.generic import FormView, ListView, TemplateView
 
 from apps.accounts.models import User
+from apps.allocations.models import Allocation
 from apps.core.permissions import CallerRequiredMixin, CoordinatorRequiredMixin, RoleRequiredMixin
 from apps.reports import metrics
 
 from . import services
 from .forms import AttemptForm, QuickAttemptForm, SessionForm
-from .models import OUTCOME_HELP, CallTask, EmsSession, Outcome, ReportCategory, SessionStatus, TaskStatus
+from .models import (
+    OUTCOME_HELP,
+    CallTask,
+    EmsSession,
+    Outcome,
+    ReportCategory,
+    SessionStatus,
+    TaskStatus,
+    congregation_label,
+)
 
 
 def visible_tasks(user):
@@ -63,7 +73,12 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
                 raise Http404
         session = session or default_session(sessions)
         context.update(
-            sessions=sessions, session=session, outcomes=Outcome.choices, outcome_help=OUTCOME_HELP
+            sessions=sessions,
+            session=session,
+            outcomes=Outcome.choices,
+            outcome_help=OUTCOME_HELP,
+            week_label=congregation_label(services.next_sunday()),
+            assigned_saints=Allocation.objects.filter(caller=user, effective_to__isnull=True).count(),
         )
         if session is None:
             return context
@@ -188,6 +203,17 @@ class SessionListView(CoordinatorRequiredMixin, ListView):
         }
         for session in context["object_list"]:
             session.summary = rows.get(session.pk)
+        sunday = services.next_sunday()
+        week = EmsSession.objects.filter(session_date=sunday, venue="").first()
+        context.update(
+            week_label=congregation_label(sunday),
+            week_session=week,
+            week_summary=metrics.summarize(CallTask.objects.filter(session=week)) if week else None,
+            older_open=EmsSession.objects.filter(status=SessionStatus.OPEN, session_date__lt=sunday),
+            allocated_saints=Allocation.objects.filter(
+                effective_to__isnull=True, contact__status="active"
+            ).count(),
+        )
         return context
 
 

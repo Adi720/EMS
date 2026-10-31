@@ -1,27 +1,32 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Import{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3 mb-0">Workbook import</h1>
-  <a class="btn btn-primary" href="{% url 'imports:upload' %}">Upload workbook</a>
-</div>
-<p class="text-body-secondary">Imports current contacts and their caller allocations from the EMS workbook. Every upload is staged and previewed; nothing is imported until you commit. Historical weekly columns are kept in the staged rows but not migrated.</p>
-<div class="table-responsive">
-  <table class="table bg-body">
-    <thead><tr><th>#</th><th>File</th><th>Uploaded</th><th>Status</th><th>Result</th></tr></thead>
-    <tbody>
-      {% for b in object_list %}
-      <tr>
-        <td><a href="{% url 'imports:detail' b.pk %}">{{ b.pk }}</a></td>
-        <td>{{ b.original_filename }}</td>
-        <td>{{ b.uploaded_at|date:"d M Y H:i" }} by {{ b.uploaded_by }}</td>
-        <td>{{ b.get_status_display }}</td>
-        <td>{% if b.summary.result %}{{ b.summary.result.created }} created, {{ b.summary.result.linked }} linked, {{ b.summary.result.skipped }} skipped{% endif %}</td>
-      </tr>
-      {% empty %}<tr><td colspan="5" class="text-body-secondary">No imports yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% url 'imports:upload' as upload_url %}
+{% include "includes/ui/page_header.html" with title="Import Saints from Excel" subtitle="Bring in the current Saints and who calls them from the EMS workbook. Every upload is checked and previewed — nothing is saved until you confirm. Old weekly history is not imported." action_url=upload_url action_label="Upload workbook" action_icon="cloud-arrow-up" only %}
+
+{% if object_list %}
+<section class="card">
+  <div class="ems-card-header"><h2 class="ems-section-title">Imports</h2></div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>File</th><th>Uploaded</th><th>Status</th><th>Result</th><th class="text-end"><span class="visually-hidden">Action</span></th></tr></thead>
+      <tbody>
+        {% for b in object_list %}
+        <tr>
+          <td><a href="{% url 'imports:detail' b.pk %}">#{{ b.pk }} · {{ b.original_filename }}</a></td>
+          <td class="text-nowrap">{{ b.uploaded_at|date:"d M Y, H:i" }}<div class="small ems-muted">{{ b.uploaded_by }}</div></td>
+          <td><span class="badge text-bg-{% if b.status == 'committed' %}success{% elif b.status == 'staged' %}warning{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
+          <td class="small">{% if b.summary.result %}{{ b.summary.result.created }} created · {{ b.summary.result.linked }} linked · {{ b.summary.result.skipped }} skipped{% else %}<span class="ems-muted">—</span>{% endif %}</td>
+          <td class="text-end">{% if b.status == "staged" %}<a class="btn btn-sm btn-primary" href="{% url 'imports:detail' b.pk %}">Continue</a>{% else %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'imports:detail' b.pk %}">View</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% include "includes/pagination.html" %}
+{% else %}
+  {% include "includes/ui/empty_state.html" with icon="file-earmark-spreadsheet" title="No imports yet" text="Upload the EMS workbook (.xlsx). You will check the columns, review every row and create callers' logins before anything is saved." action_url=upload_url action_label="Upload workbook" action_icon="cloud-arrow-up" only %}
+{% endif %}
 {% endblock %}

@@ -1,12 +1,20 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}{% if session %}Edit congregation{% else %}New congregation{% endif %}{% endblock %}
 {% block content %}
-<div class="row justify-content-center"><div class="col-lg-6">
-  <h1 class="h3">{% if session %}Edit {{ session }}{% else %}New EMS Congregation{% endif %}</h1>
-  <form method="post" class="card card-body" novalidate>
-    {% csrf_token %}
-    {% include "includes/form_fields.html" %}
-    <div class="d-flex gap-2"><button class="btn btn-primary">Save</button><a class="btn btn-outline-secondary" href="{% if session %}{% url 'calling:session_detail' session.pk %}{% else %}{% url 'calling:session_list' %}{% endif %}">Cancel</a></div>
-  </form>
-</div></div>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'calling:session_list' %}">EMS Congregations</a></li>{% if session %}<li class="breadcrumb-item"><a href="{% url 'calling:session_detail' session.pk %}">{{ session.label }}</a></li>{% endif %}<li class="breadcrumb-item active" aria-current="page">{% if session %}Edit{% else %}New{% endif %}</li></ol></nav>
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    {% if session %}
+      {% include "includes/ui/page_header.html" with title="Edit congregation" subtitle="The date cannot change once call lists exist." only %}
+    {% else %}
+      {% include "includes/ui/page_header.html" with title="Add another congregation" subtitle="For an extra date or a different venue. For the normal Sunday, use Start calling on the dashboard instead." only %}
+    {% endif %}
+    <form method="post" class="card card-body" novalidate>
+      {% csrf_token %}
+      {% include "includes/form_fields.html" %}
+      <div class="d-flex gap-2"><button class="btn btn-primary">Save</button><a class="btn btn-outline-secondary" href="{% if session %}{% url 'calling:session_detail' session.pk %}{% else %}{% url 'calling:session_list' %}{% endif %}">Cancel</a></div>
+    </form>
+  </div>
+</div>
 {% endblock %}

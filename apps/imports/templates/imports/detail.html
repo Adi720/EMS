@@ -1,64 +1,82 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Import #{{ batch.pk }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item active">#{{ batch.pk }}</li></ol></nav>
-<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-  <div>
-    <h1 class="h3 mb-1">Import #{{ batch.pk }} — {{ batch.original_filename }}</h1>
-    <span class="badge text-bg-{% if batch.status == 'committed' %}success{% elif batch.status == 'staged' %}warning{% else %}secondary{% endif %}">{{ batch.get_status_display }}</span>
-    <span class="small text-body-secondary">uploaded {{ batch.uploaded_at|date:"d M Y H:i" }} by {{ batch.uploaded_by }} · sheet {{ batch.contact_sheet }}</span>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item active" aria-current="page">#{{ batch.pk }}</li></ol></nav>
+{% if batch.status == "committed" %}{% include "includes/ui/stepper.html" with step=5 only %}{% elif batch.is_staged %}{% include "includes/ui/stepper.html" with step=3 only %}{% endif %}
+
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">{% if batch.status == "committed" %}Import complete{% elif batch.is_staged %}Review the rows{% else %}Import cancelled{% endif %}</h1>
+    <p class="ems-page-subtitle">#{{ batch.pk }} · {{ batch.original_filename }} · uploaded {{ batch.uploaded_at|date:"d M Y, H:i" }} by {{ batch.uploaded_by }}</p>
   </div>
-  <div class="d-flex gap-2">
-    {% if batch.is_staged %}<a class="btn btn-outline-secondary" href="{% url 'imports:mapping' batch.pk %}">Change mapping</a>{% endif %}
-    <a class="btn btn-outline-secondary" href="{% url 'imports:row_report' batch.pk %}">Row report (CSV)</a>
+  <div class="ems-page-actions">
+    {% if batch.is_staged %}<a class="btn btn-outline-secondary" href="{% url 'imports:mapping' batch.pk %}">{% icon "arrow-left" %}Columns</a>{% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'imports:row_report' batch.pk %}">{% icon "filetype-csv" %}Row report</a>
   </div>
 </div>
-{% if batch.last_error and batch.is_staged %}<div class="alert alert-danger">Last commit attempt failed and nothing was imported: {{ batch.last_error }}</div>{% endif %}
+{% if batch.last_error and batch.is_staged %}<div class="alert alert-danger">{% icon "exclamation-octagon" %}<div class="alert-body">The last attempt to import failed and nothing was saved: {{ batch.last_error }}</div></div>{% endif %}
 
 {% if result %}
-<div class="card mb-3 border-success">
-  <div class="card-header fw-semibold">Import summary</div>
-  <div class="card-body">
-    <p>Committed {{ batch.committed_at|date:"d M Y H:i" }} by {{ batch.committed_by }}. Allocations effective {{ result.effective_date }} ({{ batch.cycle }}).</p>
-    <ul>
-      <li>{{ result.rows }} rows read · <strong>{{ result.created }} contacts created</strong> · {{ result.linked }} linked to existing · {{ result.skipped }} skipped</li>
-      <li>{{ result.allocated }} allocations created · {{ result.unallocated }} created contacts without a caller</li>
-    </ul>
-    {% if result.per_caller %}<p class="mb-1 fw-semibold">Allocations per caller</p><ul>{% for name, n in result.per_caller.items %}<li>{{ name }}: {{ n }}</li>{% endfor %}</ul>{% endif %}
-    {% if result.allocation_notes %}<p class="mb-1 fw-semibold">Existing contacts whose allocation differs (not changed)</p><ul class="small">{% for n in result.allocation_notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
-    {% if result.acknowledged_discrepancies %}<p class="mb-1 fw-semibold">Discrepancies acknowledged at commit</p><ul class="small">{% for d in result.acknowledged_discrepancies %}<li>{{ d.message }}</li>{% endfor %}</ul>{% endif %}
-    {% if result.operation %}<a href="{% url 'allocations:operation' result.operation %}">View allocation change</a>{% endif %}
+{# ---- Success summary ---- #}
+<section class="ems-hero mb-4 border-success-subtle" aria-labelledby="done-title">
+  <h2 class="ems-hero__title" id="done-title">{% icon "check-circle-fill" extra_class="text-ems-yes" %} {{ result.created }} Saint{{ result.created|pluralize }} imported</h2>
+  <p class="ems-hero__text">Imported {{ batch.committed_at|date:"d M Y, H:i" }} by {{ batch.committed_by }}. Callers are responsible from {{ result.effective_date }} ({{ batch.cycle }}).</p>
+  <div class="row g-3 mt-1">
+    <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Saints created" value=result.created icon="person-plus" tone="success" only %}</div>
+    <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Already in the app" value=result.linked icon="link-45deg" tone="info" only %}</div>
+    <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Given a caller" value=result.allocated icon="headset" tone="accent" only %}</div>
+    <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Skipped" value=result.skipped icon="skip-forward" only %}</div>
   </div>
-</div>
+  {% if result.per_caller %}
+  <h3 class="ems-eyebrow mt-4 mb-2">Saints per caller</h3>
+  <div class="d-flex flex-wrap gap-2">{% for name, n in result.per_caller.items %}<span class="badge text-bg-primary fs-6 fw-semibold">{{ name }} · {{ n }}</span>{% endfor %}</div>
+  {% endif %}
+  {% if result.unallocated %}<p class="small mt-3 mb-0">{{ result.unallocated }} Saint{{ result.unallocated|pluralize }} imported without a caller — <a href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">assign them</a>.</p>{% endif %}
+  {% if result.allocation_notes %}<details class="mt-3"><summary class="small">Saints already in the app with a different caller (not changed)</summary><ul class="small mt-2">{% for n in result.allocation_notes %}<li>{{ n }}</li>{% endfor %}</ul></details>{% endif %}
+  <div class="d-flex flex-wrap gap-2 mt-3">
+    <a class="btn btn-primary" href="{% url 'allocations:home' %}">{% icon "diagram-3" %}Check assignments</a>
+    <a class="btn btn-outline-secondary" href="{% url 'contacts:list' %}">{% icon "people" %}Saints directory</a>
+  </div>
+</section>
 {% endif %}
 
-<div class="row g-2 mb-3">
-  {% for value, label in statuses %}
-  <div class="col-6 col-md-2">
-    <a class="card text-decoration-none h-100 {% if status_filter == value %}border-primary{% endif %}" href="?status={{ value }}">
-      <div class="card-body p-2"><div class="small text-body-secondary">{{ label }}</div><div class="fs-4 fw-semibold">{% for k, v in counts.items %}{% if k == value %}{{ v }}{% endif %}{% endfor %}</div></div>
-    </a>
+{% if batch.is_staged %}
+{# ---- Step 3: review ---- #}
+<section class="mb-4" aria-labelledby="summary-title">
+  <h2 class="visually-hidden" id="summary-title">Summary</h2>
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?" %}{% include "includes/ui/stat_card.html" with label="Rows read" value=review.total icon="table" url=url only %}{% endwith %}</div>
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?status=ready" %}{% include "includes/ui/stat_card.html" with label="Ready" value=review.ready icon="check-circle" tone="success" url=url only %}{% endwith %}</div>
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?status=needs_resolution" %}{% include "includes/ui/stat_card.html" with label="Need your attention" value=review.needs icon="exclamation-octagon" tone="danger" url=url only %}{% endwith %}</div>
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?status=warning" %}{% include "includes/ui/stat_card.html" with label="Warnings" value=review.warning icon="exclamation-triangle" tone="warning" url=url only %}{% endwith %}</div>
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?status=already_imported" %}{% include "includes/ui/stat_card.html" with label="Already in the app" value=review.already icon="link-45deg" tone="info" url=url only %}{% endwith %}</div>
+    <div class="col-6 col-md-4 col-xl-2">{% with url="?status=skipped" %}{% include "includes/ui/stat_card.html" with label="Skipped" value=review.skipped icon="skip-forward" url=url only %}{% endwith %}</div>
   </div>
-  {% endfor %}
-  <div class="col-6 col-md-2"><a class="card text-decoration-none h-100" href="?"><div class="card-body p-2"><div class="small text-body-secondary">All rows</div><div class="fs-4 fw-semibold">{{ batch.rows.count }}</div></div></a></div>
-</div>
+  <div class="row g-2">
+    <div class="col-6 col-lg-3"><div class="ems-issue{% if review.issues.duplicates %} has-issues{% endif %}"><span>{% icon "people" %} Possible duplicates</span><strong>{{ review.issues.duplicates }}</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="ems-issue{% if review.issues.invalid_phones %} has-issues{% endif %}"><span>{% icon "telephone-x" %} Invalid phone numbers</span><strong>{{ review.issues.invalid_phones }}</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="ems-issue{% if review.issues.missing_fields %} has-issues{% endif %}"><span>{% icon "input-cursor" %} Missing details</span><strong>{{ review.issues.missing_fields }}</strong></div></div>
+    <div class="col-6 col-lg-3"><div class="ems-issue{% if review.issues.unmatched_callers %} has-issues{% endif %}"><span>{% icon "headset" %} Caller not matched</span><strong>{{ review.issues.unmatched_callers }}</strong></div></div>
+  </div>
+</section>
 
 {% if batch.discrepancies %}
-<div class="card mb-3 border-warning">
-  <div class="card-header fw-semibold">Discrepancies ({{ batch.discrepancies|length }}) — review before importing</div>
-  <ul class="list-group list-group-flush">{% for d in batch.discrepancies %}<li class="list-group-item {% if d.code == 'caller_column_role' or d.code == 'caller_vs_collector' %}list-group-item-danger{% endif %}">{{ d.message }}</li>{% endfor %}</ul>
-</div>
+<section class="card mb-4 border-warning-subtle" aria-labelledby="disc-title">
+  <div class="ems-card-header"><h2 class="ems-section-title" id="disc-title">{% icon "exclamation-triangle" extra_class="text-warning" %} Please check ({{ batch.discrepancies|length }})</h2></div>
+  <ul class="list-group list-group-flush">{% for d in batch.discrepancies %}<li class="list-group-item small {% if d.code == 'caller_column_role' or d.code == 'caller_vs_collector' %}list-group-item-danger{% endif %}">{{ d.message }}</li>{% endfor %}</ul>
+</section>
 {% endif %}
 
 {% if unmatched_callers %}
-<section class="card mb-3 border-primary-subtle" aria-labelledby="create-callers-title">
+<section class="card mb-4 border-primary-subtle" aria-labelledby="create-callers-title">
   <div class="ems-card-header">
     <div>
-      <h2 class="ems-section-title" id="create-callers-title"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ unmatched_callers|length }} caller name{{ unmatched_callers|length|pluralize }} in the workbook ha{{ unmatched_callers|length|pluralize:"s,ve" }} no account yet</h2>
-      <div class="small ems-muted">Create Caller-only accounts for them. Passwords are generated and shown once, for you to share privately. If a name is just a different spelling of an existing person, untick it and pick that person in the table below instead.</div>
+      <h2 class="ems-section-title" id="create-callers-title">{% icon "person-plus" %} {{ unmatched_callers|length }} caller name{{ unmatched_callers|length|pluralize }} in the workbook ha{{ unmatched_callers|length|pluralize:"s,ve" }} no login yet</h2>
+      <div class="small ems-muted">Create Caller-only logins for them. Passwords are generated and shown once, for you to share privately. If a name is only a different spelling of an existing person, untick it and choose that person in "Callers in the workbook" below.</div>
     </div>
   </div>
-  <form method="post" action="{% url 'imports:create_callers' batch.pk %}" onsubmit="return confirm('Create the ticked caller accounts?');">
+  <form method="post" action="{% url 'imports:create_callers' batch.pk %}" onsubmit="return confirm('Create the ticked caller logins?');">
     {% csrf_token %}
     <div class="table-responsive">
       <table class="table align-middle">
@@ -70,45 +88,46 @@
             <td><label for="create-{{ forloop.counter0 }}">{{ u.name }}</label><input type="hidden" name="name_{{ forloop.counter0 }}" value="{{ u.name }}"></td>
             <td class="text-end ems-num">{{ u.rows }}</td>
             <td><input class="form-control form-control-sm" name="username_{{ forloop.counter0 }}" value="{{ u.username }}" aria-label="Username for {{ u.name }}" maxlength="150" style="min-width: 10rem"></td>
-            <td class="small">{% if u.similar %}<span class="text-warning-emphasis">Similar existing account: {% for s in u.similar %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% else %}<span class="ems-muted">New caller</span>{% endif %}</td>
+            <td class="small">{% if u.similar %}<span class="text-warning-emphasis">Similar existing login: {% for s in u.similar %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>{% else %}<span class="ems-muted">New caller</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     <div class="card-body border-top d-flex flex-wrap align-items-center gap-2">
-      <button class="btn btn-primary">Create ticked accounts</button>
-      <span class="small ems-muted">Accounts get the Caller role only. Nothing is imported yet.</span>
+      <button class="btn btn-primary">{% icon "person-plus" %}Create ticked logins</button>
+      <span class="small ems-muted">Caller role only. No Saints are imported yet.</span>
     </div>
   </form>
 </section>
 {% endif %}
+{% endif %}
 
-<div class="row g-3 mb-3">
+<div class="row g-4 mb-4">
   <div class="{% if status_records %}col-xl-6{% else %}col-12{% endif %}">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Caller names in the workbook → users</div>
+    <section class="card h-100" aria-labelledby="names-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="names-title">Callers in the workbook</h2></div>
       <div class="table-responsive">
-        <table class="table table-sm mb-0 align-middle">
-          <thead><tr><th>Workbook value</th><th class="text-end">Rows</th><th>Resolved to</th>{% if batch.is_staged %}<th>Map</th>{% endif %}</tr></thead>
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Workbook name</th><th class="text-end">Saints</th><th>Matched to</th>{% if batch.is_staged %}<th>Change</th>{% endif %}</tr></thead>
           <tbody>
             {% for c in caller_names %}
             <tr>
               <td>{{ c.name|default:"(blank)" }}</td>
-              <td class="text-end">{{ c.count }}</td>
-              <td>{% if c.user %}{{ c.user }} <span class="small text-body-secondary">({{ c.state }})</span>{% elif c.state == "unallocated" %}<span class="text-body-secondary">No caller</span>{% else %}<span class="text-danger">{{ c.state }}</span>{% endif %}</td>
+              <td class="text-end ems-num">{{ c.count }}</td>
+              <td>{% if c.user %}{% icon "check-circle-fill" extra_class="text-ems-yes" %} {{ c.user }}{% elif c.state == "unallocated" %}<span class="ems-muted">No caller</span>{% elif c.state == "ambiguous" %}<span class="badge text-bg-danger">More than one match</span>{% else %}<span class="badge text-bg-danger">Not matched</span>{% endif %}</td>
               {% if batch.is_staged %}
               <td>
                 <form method="post" action="{% url 'imports:caller_mapping' batch.pk %}" class="d-flex flex-wrap gap-1 align-items-center">
                   {% csrf_token %}
                   <input type="hidden" name="name" value="{{ c.name }}">
-                  <select class="form-select form-select-sm" name="choice" aria-label="Map {{ c.name|default:'blank' }}">
+                  <select class="form-select form-select-sm" name="choice" aria-label="Caller for {{ c.name|default:'blank' }}" style="max-width: 14rem">
                     <option value="">Automatic</option>
-                    <option value="unallocated" {% if c.choice == "unallocated" %}selected{% endif %}>No caller (import unallocated)</option>
+                    <option value="unallocated" {% if c.choice == "unallocated" %}selected{% endif %}>No caller (assign later)</option>
                     {% for u in callers %}<option value="{{ u.pk }}" {% if c.choice == u.pk|stringformat:"s" %}selected{% endif %}>{{ u }}</option>{% endfor %}
                   </select>
-                  <label class="small"><input type="checkbox" name="save_alias" class="form-check-input"> remember</label>
-                  <button class="btn btn-sm btn-outline-primary">Save</button>
+                  <label class="small text-nowrap"><input type="checkbox" name="save_alias" class="form-check-input"> remember</label>
+                  <button class="btn btn-sm btn-outline-secondary">Save</button>
                 </form>
               </td>
               {% endif %}
@@ -117,70 +136,94 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
   {% if status_records %}
   <div class="col-xl-6">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Status sheet: Total Assigned vs workbook rows</div>
+    <section class="card h-100" aria-labelledby="status-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="status-title">Status sheet check</h2></div>
       <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Name</th><th>Co-ordinator</th><th>User</th><th class="text-end">Total Assigned</th><th class="text-end">Rows</th></tr></thead>
+        <table class="table table-sm">
+          <thead><tr><th>Name</th><th>Login</th><th class="text-end">Total Assigned</th><th class="text-end">In workbook</th></tr></thead>
           <tbody>
             {% for r in status_records %}
             <tr class="{% if r.user and r.total_assigned != r.derived %}table-warning{% elif not r.user %}table-secondary{% endif %}">
-              <td>{{ r.name }}</td><td>{{ r.coordinator }}</td><td>{{ r.user|default:"—" }}</td>
-              <td class="text-end">{{ r.total_assigned_raw|default:"—" }}</td><td class="text-end">{{ r.derived|default_if_none:"—" }}</td>
+              <td>{{ r.name }}</td><td>{{ r.user|default:"—" }}</td>
+              <td class="text-end ems-num">{{ r.total_assigned_raw|default:"—" }}</td><td class="text-end ems-num">{{ r.derived|default_if_none:"—" }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
   {% endif %}
 </div>
 
-<div class="card mb-3">
-  <div class="card-header fw-semibold">Rows{% if status_filter %} — {% for v, l in statuses %}{% if v == status_filter %}{{ l }}{% endif %}{% endfor %}{% endif %}</div>
+<section class="card mb-4" aria-labelledby="rows-title">
+  <div class="ems-card-header">
+    <h2 class="ems-section-title" id="rows-title">Rows{% if status_filter %} · {% for v, l in statuses %}{% if v == status_filter %}{{ l }}{% endif %}{% endfor %}{% endif %}</h2>
+    {% if status_filter %}<a class="small" href="?">Show all rows</a>{% endif %}
+  </div>
   <div class="table-responsive">
-    <table class="table table-sm mb-0 align-middle">
-      <thead><tr><th>Row</th><th>Name</th><th>Area</th><th>Caller</th><th>Status</th><th>Issues</th><th></th></tr></thead>
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Row</th><th>Name</th><th>Area</th><th>Caller</th><th>Status</th><th>Details</th><th class="text-end"><span class="visually-hidden">Action</span></th></tr></thead>
       <tbody>
         {% for r in page %}
         <tr>
-          <td>{{ r.row_number }}</td>
+          <td class="ems-num">{{ r.row_number }}</td>
           <td>{{ r.values.full_name|default:"—" }}</td>
           <td>{{ r.values.area|default:"—" }}</td>
           <td>{{ r.values.caller_name|default:"—" }}</td>
           <td><span class="badge text-bg-{% if r.status == 'ready' %}success{% elif r.status == 'warning' %}warning{% elif r.status == 'needs_resolution' %}danger{% elif r.status == 'already_imported' %}info{% else %}secondary{% endif %}">{{ r.get_status_display }}</span>
-            {% if r.outcome %}<div class="small">{{ r.get_outcome_display }}{% if r.contact %} · <a href="{% url 'contacts:detail' r.contact_id %}">contact</a>{% endif %}</div>{% endif %}</td>
+            {% if r.outcome %}<div class="small">{{ r.get_outcome_display }}{% if r.contact %} · <a href="{% url 'contacts:detail' r.contact_id %}">open</a>{% endif %}</div>{% endif %}</td>
           <td class="small">{% for i in r.issues %}<div class="{% if i.level == 'error' %}text-danger{% else %}text-warning-emphasis{% endif %}">{{ i.message }}</div>{% endfor %}{% if r.skip_reason %}<div>Skipped: {{ r.skip_reason }}</div>{% endif %}{% if r.link_contact %}<div>→ {{ r.link_contact }}</div>{% endif %}</td>
-          <td>{% if batch.is_staged %}<a class="btn btn-sm btn-outline-primary" href="{% url 'imports:row_edit' batch.pk r.pk %}">Resolve</a>{% endif %}</td>
+          <td class="text-end">{% if batch.is_staged %}<a class="btn btn-sm {% if r.status == 'needs_resolution' %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="{% url 'imports:row_edit' batch.pk r.pk %}">{% if r.status == 'needs_resolution' %}Fix{% else %}Edit{% endif %}</a>{% endif %}</td>
         </tr>
-        {% empty %}<tr><td colspan="7" class="text-body-secondary">No rows in this view.</td></tr>
+        {% empty %}<tr><td colspan="7" class="ems-muted">No rows in this view.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-</div>
+</section>
 {% with page_obj=page querystring="status="|add:status_filter %}{% include "includes/pagination.html" %}{% endwith %}
 
 {% if batch.is_staged %}
-<div class="card border-primary mb-3">
-  <div class="card-header fw-semibold">Commit import</div>
-  <div class="card-body">
-    {% for b in blockers %}{% if "Acknowledge" not in b and "Confirm that" not in b and "allocation cycle" not in b %}<div class="alert alert-danger py-2">{{ b }}</div>{% endif %}{% endfor %}
-    {% if warning_count %}<p class="small">{{ warning_count }} row(s) have warnings and will be imported as shown.</p>{% endif %}
-    <form method="post" action="{% url 'imports:commit' batch.pk %}" novalidate>
-      {% csrf_token %}
-      {% include "includes/form_fields.html" with form=commit_form %}
-      <div class="d-flex flex-wrap gap-2">
-        <button class="btn btn-primary btn-lg">Import now</button>
-      </div>
-    </form>
-    <form method="post" action="{% url 'imports:cancel' batch.pk %}" class="mt-3" onsubmit="return confirm('Cancel this import? Nothing will be imported.');">{% csrf_token %}<button class="btn btn-link text-danger p-0">Cancel this batch</button></form>
+{# ---- Step 4: confirm ---- #}
+<section class="card border-primary-subtle mb-3" aria-labelledby="confirm-title" id="confirm">
+  <div class="ems-card-header">
+    <h2 class="ems-section-title" id="confirm-title"><span class="ems-stepper__dot d-inline-grid me-1">4</span> Confirm and import</h2>
   </div>
-</div>
+  <div class="card-body">
+    {% if review.needs %}
+      <div class="alert alert-danger">{% icon "exclamation-octagon" %}<div class="alert-body">{{ review.needs }} row{{ review.needs|pluralize }} still need{{ review.needs|pluralize:"s," }} your attention. <a class="alert-link" href="?status=needs_resolution">Fix them</a> (or skip them with a reason) before importing.</div></div>
+    {% endif %}
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <h3 class="ems-eyebrow">What will happen</h3>
+        <ul class="list-unstyled mb-3">
+          <li class="mb-1">{% icon "person-plus" extra_class="text-ems-yes" %} <strong>{{ review.to_create }}</strong> new Saint{{ review.to_create|pluralize }} will be created</li>
+          <li class="mb-1">{% icon "link-45deg" %} <strong>{{ review.to_link }}</strong> already in the app — linked, not changed</li>
+          <li class="mb-1">{% icon "headset" %} <strong>{{ review.to_allocate }}</strong> will get their caller{% if review.unallocated %}; <strong>{{ review.unallocated }}</strong> without a caller{% endif %}</li>
+          <li class="mb-1">{% icon "skip-forward" %} <strong>{{ review.skipped }}</strong> skipped</li>
+        </ul>
+        {% if review.per_caller %}
+        <h3 class="ems-eyebrow">Saints per caller</h3>
+        <div class="table-responsive"><table class="table table-sm"><tbody>{% for name, n in review.per_caller %}<tr><td>{{ name }}</td><td class="text-end ems-num">{{ n }}</td></tr>{% endfor %}</tbody></table></div>
+        {% endif %}
+        {% if warning_count %}<p class="small ems-muted">{{ warning_count }} row{{ warning_count|pluralize }} with warnings will be imported as shown.</p>{% endif %}
+      </div>
+      <div class="col-lg-7">
+        <form method="post" action="{% url 'imports:commit' batch.pk %}" novalidate>
+          {% csrf_token %}
+          <p class="small ems-muted">Give the current three-month caller lists a name and the date they started (not the date Saints were met at the stall).</p>
+          {% include "includes/form_fields.html" with form=commit_form %}
+          <button class="btn btn-primary btn-lg w-100"{% if review.needs %} disabled{% endif %}>{% icon "cloud-arrow-down" %}Import {{ review.to_create }} Saint{{ review.to_create|pluralize }}</button>
+        </form>
+        <form method="post" action="{% url 'imports:cancel' batch.pk %}" class="mt-3 text-center" onsubmit="return confirm('Cancel this import? Nothing will be imported.');">{% csrf_token %}<button class="btn btn-link text-danger p-0 small">Cancel this import</button></form>
+      </div>
+    </div>
+  </div>
+</section>
 {% endif %}
 {% endblock %}

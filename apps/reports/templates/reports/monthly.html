@@ -1,30 +1,60 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Monthly report{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">Monthly report — {{ month_start|date:"F Y" }}</h1>
-  <form method="get" class="d-flex gap-2">
-    <label class="visually-hidden" for="month">Month</label>
-    <input class="form-control" type="month" id="month" name="month" value="{{ month_value }}">
-    <button class="btn btn-secondary">Show</button>
-  </form>
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <div class="ems-eyebrow mb-1">Monthly report</div>
+    <h1 class="ems-page-title">{{ month_start|date:"F Y" }}</h1>
+    <p class="ems-page-subtitle">{{ session_count }} congregation{{ session_count|pluralize }} · {{ unique_yes }} different Saint{{ unique_yes|pluralize }} said Yes</p>
+  </div>
+  <div class="ems-page-actions align-items-end">
+    <form method="get" class="d-flex gap-2 align-items-end">
+      <div><label class="form-label small mb-1" for="month">Month</label><input class="form-control" type="month" id="month" name="month" value="{{ month_value }}"></div>
+      <button class="btn btn-outline-secondary">Show</button>
+    </form>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% icon "download" %}Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Excel</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=csv">{% icon "filetype-csv" %}CSV</a></li>
+      </ul>
+    </div>
+  </div>
 </div>
-<p>{{ session_count }} congregation(s) · {{ unique_yes }} unique contact(s) said Yes. <a href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=xlsx">Export Excel</a> · <a href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=csv">CSV</a></p>
-{% include "includes/metric_tiles.html" %}
-<div class="card mb-3">
-  <div class="card-header fw-semibold">By congregation</div>
-  <div class="table-responsive"><table class="table table-sm mb-0 table-metrics">
-    <thead><tr><th>Congregation</th>{% include "includes/metric_headers.html" %}</tr></thead>
-    <tbody>{% for row in by_session %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj }}</a></td>{% include "includes/metric_cells.html" %}</tr>{% empty %}<tr><td colspan="10" class="text-body-secondary">No calling in this month.</td></tr>{% endfor %}</tbody>
-    {% if by_session %}<tfoot><tr class="fw-semibold"><td>Total</td>{% include "includes/metric_cells.html" with row=summary %}</tr></tfoot>{% endif %}
-  </table></div>
-</div>
-<div class="card">
-  <div class="card-header fw-semibold">By caller (all congregations in the month)</div>
-  <div class="table-responsive"><table class="table table-sm mb-0 table-metrics">
-    <thead><tr><th>Caller</th>{% include "includes/metric_headers.html" %}</tr></thead>
-    <tbody>{% for row in by_caller %}<tr><td>{{ row.caller_obj }}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
-  </table></div>
-</div>
-<p class="small text-body-secondary mt-2">Monthly totals add up each congregation; a contact called for several congregations is counted once per congregation.</p>
+
+{% if summary.assigned %}
+  {% include "includes/metric_tiles.html" %}
+  <div class="card card-body mb-4">
+    <div class="row g-4">
+      <div class="col-md-6">{% include "includes/ui/progress.html" with label="Calling completion" value=summary.completed total=summary.assigned unit="calls" size="lg" only %}</div>
+      <div class="col-md-6">{% include "includes/ui/progress.html" with label="Connected (of calls made)" value=summary.connected total=summary.completed unit="calls" size="lg" bar_class="bg-ems-try" only %}</div>
+    </div>
+  </div>
+
+  <section class="card mb-4" aria-labelledby="by-session-title">
+    <div class="ems-card-header"><h2 class="ems-section-title" id="by-session-title">By congregation</h2></div>
+    <div class="table-responsive">
+      <table class="table table-hover table-metrics align-middle">
+        <thead><tr><th>Congregation</th><th style="min-width:9rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
+        <tbody>{% for row in by_session %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj.label }}</a></td><td>{% include "includes/ui/progress.html" with value=row.completed total=row.assigned only %}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
+        <tfoot><tr><td>Total</td><td></td>{% include "includes/metric_cells.html" with row=summary %}</tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="card mb-3" aria-labelledby="by-caller-title">
+    <div class="ems-card-header"><h2 class="ems-section-title" id="by-caller-title">By caller</h2><span class="small ems-muted">all congregations in {{ month_start|date:"F" }}</span></div>
+    <div class="table-responsive">
+      <table class="table table-hover table-metrics align-middle">
+        <thead><tr><th>Caller</th><th style="min-width:9rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
+        <tbody>{% for row in by_caller %}<tr><td>{{ row.caller_obj }}</td><td>{% include "includes/ui/progress.html" with value=row.completed total=row.assigned only %}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+  <p class="small ems-muted">Monthly totals add up each congregation; a Saint called for several congregations is counted once per congregation. Completed = at least one attempt. Will Try is never counted as Yes.</p>
+{% else %}
+  {% url 'calling:session_list' as congregations_url %}
+  {% include "includes/ui/empty_state.html" with icon="bar-chart-line" title="No calling in this month" text="Choose another month above, or start calling for the coming Sunday." action_url=congregations_url action_label="EMS Congregations" only %}
+{% endif %}
 {% endblock %}

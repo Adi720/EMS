@@ -1,13 +1,60 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Upload workbook{% endblock %}
 {% block content %}
-<div class="row justify-content-center"><div class="col-lg-6">
-  <h1 class="h3">Upload workbook</h1>
-  <p class="text-body-secondary">The file is read into a staging area. You will map columns, review every row and confirm the allocation cycle before anything is imported.</p>
-  <form method="post" enctype="multipart/form-data" class="card card-body" novalidate>
-    {% csrf_token %}
-    {% include "includes/form_fields.html" %}
-    <button class="btn btn-primary">Upload and stage</button>
-  </form>
-</div></div>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item active" aria-current="page">Upload</li></ol></nav>
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    {% include "includes/ui/stepper.html" with step=1 only %}
+    {% include "includes/ui/page_header.html" with title="Upload the EMS workbook" subtitle="The file is only read and checked at this point. You will review everything before any Saint is saved." only %}
+
+    <form method="post" enctype="multipart/form-data" class="card card-body" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger">{% icon "exclamation-octagon" %}<div class="alert-body">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div></div>{% endif %}
+
+      <label class="ems-dropzone mb-2" id="dropzone" for="{{ form.file.id_for_label }}">
+        <input type="file" name="{{ form.file.html_name }}" id="{{ form.file.id_for_label }}" accept=".xlsx,.csv" required aria-describedby="file-help">
+        <span class="ems-dropzone__icon">{% icon "file-earmark-arrow-up" %}</span>
+        <span class="fw-semibold" id="dropzone-title">Drop the workbook here, or <span class="text-decoration-underline">browse</span></span>
+        <span class="ems-dropzone__file d-none" id="dropzone-file"></span>
+        <span class="small ems-muted" id="file-help">Excel (.xlsx) or CSV · up to 5 MB · the 'EMS STALL SEWA' sheet is used</span>
+      </label>
+      {% for e in form.file.errors %}<div class="text-danger small mb-2">{{ e }}</div>{% endfor %}
+
+      <div class="form-check my-3">
+        {{ form.use_status_sheet }}
+        <label class="form-check-label" for="{{ form.use_status_sheet.id_for_label }}">{{ form.use_status_sheet.label }}</label>
+        <div class="form-text">Leave unticked if that sheet is not kept up to date. It is only ever used as a check.</div>
+      </div>
+
+      <details class="mb-3" {% if form.contact_sheet.errors or form.status_sheet.errors or form.contact_sheet.value or form.status_sheet.value %}open{% endif %}>
+        <summary class="small">Advanced: use different sheet names</summary>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6"><label class="form-label small" for="{{ form.contact_sheet.id_for_label }}">{{ form.contact_sheet.label }}</label>{{ form.contact_sheet }}<div class="form-text">{{ form.contact_sheet.help_text }}</div></div>
+          <div class="col-md-6"><label class="form-label small" for="{{ form.status_sheet.id_for_label }}">{{ form.status_sheet.label }}</label>{{ form.status_sheet }}<div class="form-text">{{ form.status_sheet.help_text }}</div></div>
+        </div>
+      </details>
+
+      <button class="btn btn-primary btn-lg w-100">{% icon "arrow-right" %}Upload and check</button>
+    </form>
+    <p class="small ems-muted mt-3">{% icon "shield-lock" %} The workbook holds real names and phone numbers. Keep it private; it is never added to the code repository.</p>
+  </div>
+</div>
+<script>
+  (function () {
+    var zone = document.getElementById("dropzone");
+    var input = zone.querySelector("input[type=file]");
+    var fileLabel = document.getElementById("dropzone-file");
+    function show() {
+      var file = input.files && input.files[0];
+      fileLabel.textContent = file ? file.name + " · " + Math.max(1, Math.round(file.size / 1024)) + " KB" : "";
+      fileLabel.classList.toggle("d-none", !file);
+      zone.classList.toggle("has-file", !!file);
+    }
+    input.addEventListener("change", show);
+    ["dragenter", "dragover"].forEach(function (e) { zone.addEventListener(e, function () { zone.classList.add("is-dragover"); }); });
+    ["dragleave", "drop"].forEach(function (e) { zone.addEventListener(e, function () { zone.classList.remove("is-dragover"); }); });
+    zone.addEventListener("drop", function () { setTimeout(show, 0); });
+  })();
+</script>
 {% endblock %}

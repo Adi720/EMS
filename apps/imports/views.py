@@ -142,6 +142,7 @@ class BatchDetailView(BatchMixin, View):
             "callers": callers,
             "status_records": services.status_record_rows(batch),
             "unmatched_callers": services.unmatched_callers(batch) if batch.is_staged else [],
+            "review": services.review_summary(batch),
             "blockers": services.commit_blockers(batch) if batch.is_staged else [],
             "commit_form": commit_form
             or CommitForm(needs_ack=bool(batch.discrepancies), initial={"cycle": batch.cycle}),

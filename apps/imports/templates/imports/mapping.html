@@ -1,35 +1,42 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Map columns{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item active">#{{ batch.pk }} columns</li></ol></nav>
-<h1 class="h3">Map columns — {{ batch.original_filename }}</h1>
-<p>Sheet <strong>{{ batch.contact_sheet }}</strong> (header row {{ batch.header_row }}, {{ batch.rows.count }} rows).
-  Status sheet: <strong>{{ batch.status_sheet|default:"not found" }}</strong>{% if batch.caller_records %} ({{ batch.caller_records|length }} caller records){% endif %}.</p>
-{% if previous %}<div class="alert alert-warning">This exact file was already imported ({% for b in previous %}<a href="{% url 'imports:detail' b.pk %}">#{{ b.pk }}</a> {% endfor %}). Re-importing will link existing contacts rather than create duplicates.</div>{% endif %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'imports:list' %}">Import</a></li><li class="breadcrumb-item active" aria-current="page">#{{ batch.pk }} · columns</li></ol></nav>
+{% include "includes/ui/stepper.html" with step=2 only %}
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <h1 class="ems-page-title">Check the columns</h1>
+    <p class="ems-page-subtitle">{{ batch.original_filename }} · sheet <strong>{{ batch.contact_sheet }}</strong> · {{ batch.rows.count }} rows{% if batch.caller_records %} · comparing with <strong>{{ batch.status_sheet }}</strong>{% endif %}</p>
+  </div>
+</div>
+{% if previous %}<div class="alert alert-warning">{% icon "arrow-repeat" %}<div class="alert-body">This exact file was imported before ({% for b in previous %}<a class="alert-link" href="{% url 'imports:detail' b.pk %}">#{{ b.pk }}</a> {% endfor %}). Saints already in the app will be linked, not duplicated.</div></div>{% endif %}
 
-<div class="row g-3">
+<div class="row g-4">
   <div class="col-lg-5">
-    <form method="post" class="card card-body" novalidate>
+    <form method="post" class="card" novalidate>
       {% csrf_token %}
-      {% include "includes/form_fields.html" %}
-      <div class="alert alert-info small">
-        <strong>Allocated caller:</strong> the working assumption is that <code>CALLING CO-ORDINATER</code> holds the caller allocated to each contact. You will be asked to confirm this before committing.
-        <code>SEWA CONDUCTED BY</code> is stored as free text only.
-        Unmapped columns (e.g. historical weeks) stay in the staged rows and are not imported.
+      <div class="ems-card-header"><h2 class="ems-section-title">Which column holds what?</h2></div>
+      <div class="card-body">
+        <p class="small ems-muted">We matched the columns automatically. Change any that are wrong.</p>
+        {% include "includes/form_fields.html" %}
+        <div class="alert alert-info small">{% icon "info-circle" %}
+          <div class="alert-body"><strong>Allocated caller</strong> is the person who calls each Saint (usually <code>CALLING CO-ORDINATER</code>). <code>SEWA CONDUCTED BY</code> is only stored as text. Other columns, such as old weekly results, are not imported.</div>
+        </div>
+        <button class="btn btn-primary w-100">{% icon "arrow-right" %}Check the rows</button>
       </div>
-      <button class="btn btn-primary">Validate rows</button>
     </form>
   </div>
   <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header fw-semibold">First rows as read</div>
+    <section class="card">
+      <div class="ems-card-header"><h2 class="ems-section-title">First rows, as read from the workbook</h2></div>
       <div class="table-responsive">
-        <table class="table table-sm mb-0 small">
+        <table class="table table-sm small">
           <thead><tr><th>Row</th>{% for h in batch.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
-          <tbody>{% for r in samples %}<tr><td>{{ r.row_number }}</td>{% for h in batch.headers %}<td>{% for k, v in r.raw_values.items %}{% if k == h %}{{ v }}{% endif %}{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+          <tbody>{% for r in samples %}<tr><td class="ems-num">{{ r.row_number }}</td>{% for h in batch.headers %}<td>{% for k, v in r.raw_values.items %}{% if k == h %}{{ v }}{% endif %}{% endfor %}</td>{% endfor %}</tr>{% endfor %}</tbody>
         </table>
       </div>
-    </div>
+    </section>
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,7 @@
+{# Current result of a call task. Usage: {% include "includes/ui/outcome_badge.html" with task=t %} #}
+{% if task.status == "withdrawn" %}<span class="badge text-bg-secondary">Withdrawn</span>
+{% elif task.latest_outcome == "yes" %}<span class="badge text-bg-success"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Yes</span>
+{% elif task.latest_outcome == "not_possible" %}<span class="badge text-bg-danger"><i class="bi bi-x-circle-fill" aria-hidden="true"></i> Not Possible</span>
+{% elif task.latest_outcome == "will_try" %}<span class="badge text-bg-info"><i class="bi bi-question-circle-fill" aria-hidden="true"></i> Will Try</span>
+{% elif task.latest_outcome == "not_connected" %}<span class="badge text-bg-secondary"><i class="bi bi-telephone-x" aria-hidden="true"></i> Not connected</span>
+{% else %}<span class="badge text-bg-warning"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Pending</span>{% endif %}

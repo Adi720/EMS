@@ -1,22 +1,61 @@
 {% extends "base.html" %}
+{% load ui %}
 {% block title %}Audit log{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">Audit log</h1>
-  <form method="get" class="d-flex gap-2">
-    <label class="visually-hidden" for="action">Action</label>
-    <select class="form-select" id="action" name="action"><option value="">All actions</option>{% for a in actions %}<option value="{{ a }}" {% if a == selected_action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
-    <button class="btn btn-secondary">Filter</button>
-  </form>
-</div>
-<div class="table-responsive">
-  <table class="table table-sm bg-body">
-    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Summary</th></tr></thead>
-    <tbody>
-      {% for e in object_list %}<tr><td class="text-nowrap">{{ e.created_at|date:"d M Y H:i" }}</td><td>{{ e.actor|default:"system" }}</td><td><code>{{ e.action }}</code></td><td>{{ e.summary }}</td></tr>
-      {% empty %}<tr><td colspan="4" class="text-body-secondary">No events.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% with querystring="action="|add:selected_action %}{% include "includes/pagination.html" %}{% endwith %}
+{% include "includes/ui/page_header.html" with title="Audit log" subtitle="Every important change: who did it, when, and to which record. Entries cannot be edited or deleted." only %}
+
+<form method="get" class="card card-body mb-4" role="search" aria-label="Filter the audit log">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-lg-3">
+      <label class="form-label small" for="type">Activity</label>
+      <select class="form-select" id="type" name="type">
+        <option value="">All activity</option>
+        {% for key, label in categories %}<option value="{{ key }}" {% if selected.type == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg-3">
+      <label class="form-label small" for="person">Person</label>
+      <select class="form-select" id="person" name="person">
+        <option value="">Anyone</option>
+        <option value="system" {% if selected.person == "system" %}selected{% endif %}>System (automatic)</option>
+        {% for p in people %}<option value="{{ p.pk }}" {% if selected.person == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="from">From</label><input class="form-control" type="date" id="from" name="from" value="{{ selected.from }}"></div>
+    <div class="col-6 col-lg-2"><label class="form-label small" for="to">To</label><input class="form-control" type="date" id="to" name="to" value="{{ selected.to }}"></div>
+    <div class="col-12 col-lg-2 d-flex gap-2">
+      <button class="btn btn-primary flex-fill">Apply</button>
+      {% if has_filters %}<a class="btn btn-outline-secondary" href="{% url 'audit:event_list' %}" aria-label="Clear filters">{% icon "x-lg" %}</a>{% endif %}
+    </div>
+  </div>
+</form>
+
+{% if object_list %}
+<section class="card">
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead><tr><th style="width:7rem">Time</th><th>Activity</th><th>Who</th><th class="text-end"><span class="visually-hidden">Record</span></th></tr></thead>
+      <tbody>
+        {% for e in object_list %}
+        {% ifchanged %}<tr class="ems-day-row"><th colspan="4" scope="rowgroup">{{ e.created_at|date:"l, d F Y" }}</th></tr>{% endifchanged %}
+        <tr>
+          <td class="ems-num ems-muted text-nowrap">{{ e.created_at|date:"H:i" }}</td>
+          <td>
+            <div class="d-flex gap-2 align-items-start">
+              <span class="ems-stat__icon flex-shrink-0" style="width:28px;height:28px">{% icon e.icon %}</span>
+              <div class="min-w-0"><div class="fw-semibold">{{ e.label }}</div><div class="small ems-muted">{{ e.summary }}</div></div>
+            </div>
+          </td>
+          <td class="text-nowrap">{% if e.actor %}{{ e.actor }}{% else %}<span class="ems-muted">System</span>{% endif %}</td>
+          <td class="text-end">{% if e.record_url %}<a class="btn btn-sm btn-outline-secondary" href="{{ e.record_url }}">Open</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% include "includes/pagination.html" %}
+{% else %}
+  {% include "includes/ui/empty_state.html" with icon="clock-history" title="No activity found" text="Nothing matches these filters. Changes appear here as people use the app." only %}
+{% endif %}
 {% endblock %}

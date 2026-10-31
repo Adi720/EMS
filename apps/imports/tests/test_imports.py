@@ -408,3 +408,13 @@ def test_generated_passwords_are_readable_and_strong():
     taken = {"shalini.ji"}
     assert suggest_username("Shalini ji", taken) == "shalini.ji2"
     assert suggest_username("  Vansh  Ji ", taken) == "vansh.ji"
+
+
+def test_review_summary_counts_problems_and_previews_result(staged):
+    review = services.review_summary(staged)
+    assert review["total"] == 120
+    assert review["needs"] > 0 and review["issues"]["invalid_phones"] == 1
+    assert review["issues"]["duplicates"] >= 1 and review["issues"]["missing_fields"] >= 1
+    assert review["issues"]["unmatched_callers"] >= 2  # unknown and blank caller rows
+    assert review["to_create"] == review["ready"] + review["warning"]
+    assert sum(n for _, n in review["per_caller"]) == review["to_allocate"]

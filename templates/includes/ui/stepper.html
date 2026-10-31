@@ -1,0 +1,7 @@
+{# Import wizard progress. Usage: {% include "includes/ui/stepper.html" with step=2 %} (step 5 = all done) #}
+<ol class="ems-stepper mb-4" aria-label="Import steps">
+  <li class="ems-stepper__step {% if step > 1 %}is-done{% elif step == 1 %}is-current{% endif %}"{% if step == 1 %} aria-current="step"{% endif %}><span class="ems-stepper__dot">{% if step > 1 %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% else %}1{% endif %}</span><span>Upload</span></li>
+  <li class="ems-stepper__step {% if step > 2 %}is-done{% elif step == 2 %}is-current{% endif %}"{% if step == 2 %} aria-current="step"{% endif %}><span class="ems-stepper__dot">{% if step > 2 %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% else %}2{% endif %}</span><span>Map columns</span></li>
+  <li class="ems-stepper__step {% if step > 3 %}is-done{% elif step == 3 %}is-current{% endif %}"{% if step == 3 %} aria-current="step"{% endif %}><span class="ems-stepper__dot">{% if step > 3 %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% else %}3{% endif %}</span><span>Review</span></li>
+  <li class="ems-stepper__step {% if step > 4 %}is-done{% elif step == 4 %}is-current{% endif %}"{% if step == 4 %} aria-current="step"{% endif %}><span class="ems-stepper__dot">{% if step > 4 %}<i class="bi bi-check-lg" aria-hidden="true"></i>{% else %}4{% endif %}</span><span>Import</span></li>
+</ol>
