@@ -177,7 +177,7 @@
   <div class="col-xl-4">
     <section class="card h-100" aria-labelledby="actions-title">
       <div class="ems-card-header"><h2 class="ems-section-title" id="actions-title">Quick actions</h2></div>
-      <div class="card-body d-grid gap-2">
+      <div class="card-body d-grid gap-2 align-content-start">
         {% if ov.state == "ready" %}
           <form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}
             <button class="ems-action">{% icon "play-circle" %}<span>Start calling<small>{{ week_label }}</small></span></button>

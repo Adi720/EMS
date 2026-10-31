@@ -14,7 +14,7 @@ Labels follow `docs/requirements.md`: [C] confirmed, [D] accepted default, [A] a
 | Sheet | Use in MVP import | Label |
 |---|---|---|
 | `EMS STALL SEWA` | **Primary source** — one row per contact; creates Contacts and initial Allocations | [C] |
-| `2026 Calling Sewa status` | **Reconciliation only** — caller list, expected `Total Assigned` per caller, caller → coordinator grouping. No records created | [C] use / [A] interpretation (B-2) |
+| `2026 Calling Sewa status` | **Optional cross-check only** (off by default; not reliably maintained) — expected `Total Assigned` per caller. No records created | [C] |
 | `Weekly Data` | Not imported. Weekly aggregates; candidate for a later "legacy weekly summary" if approved | [C] |
 | `Calling Sewa status` (older) | Not imported | [C] |
 
@@ -35,7 +35,7 @@ screen before validation runs; the confirmed mapping is stored on the batch.
 | `AREA` | `Contact.area` | Yes | Trim only; **no case change, spelling correction or merging** | [D] |
 | `QUALIFICATION` | `Contact.qualification` (optional) | No | Trim only | [A] |
 | `SEWA CONDUCTED BY` | `Contact.collected_by_name` (optional, free text) | No | Trim only; **not** matched to user accounts | [A] — role confirmed on mapping screen |
-| `CALLING CO-ORDINATER` | **Allocated caller** → `Allocation.caller` | Yes, for allocation | Name resolution, §3 | [A] pending **B-1** |
+| `CALLING CO-ORDINATER` | **Allocated caller** → `Allocation.caller` | Yes, for allocation | Name resolution, §3 | [C] confirmed 2026-10-31: the Saint who makes the calls |
 | Historical weekly columns | Not mapped | — | Kept in `ImportRow.raw_values` only | [C] |
 | Any other unmapped column | Not mapped | — | Kept in `ImportRow.raw_values` only (not copied to the contact, so weekly history is never migrated by accident) | [P] as built |
 
@@ -123,7 +123,7 @@ Commit is only enabled when no row is in *Needs resolution*.
 - The commit runs in one transaction (including creating the cycle); any failure leaves the
   batch staged and nothing imported.
 - Outstanding: a dry run of the real workbook (upload + preview only, no commit) and coordinator
-  confirmation of B-1/B-2 before committing.
+  review before committing (B-1 and B-2 are resolved).
 
 ## 7. Synthetic test workbook
 

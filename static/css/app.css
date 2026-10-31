@@ -743,6 +743,8 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 /* ---- Calling: caller screens (phone first) -------------------------------------- */
 
 .ems-caller { max-width: 720px; margin: 0 auto; }
+.ems-caller__switch { width: 100%; }
+@media (min-width: 576px) { .ems-caller__switch { width: 13rem; flex: 0 0 auto; } }
 
 .ems-caller__counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; text-align: center; }
 .ems-caller__counts > div {

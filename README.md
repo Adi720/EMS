@@ -6,7 +6,9 @@ the initial workbook import.
 
 - Requirements and implementation decisions: [docs/requirements.md](docs/requirements.md)
 - Workbook import mapping: [docs/import-mapping.md](docs/import-mapping.md)
-- How to use the application (coordinators and callers): [docs/user-guide.md](docs/user-guide.md)
+- Quick start: [docs/user-guide.md](docs/user-guide.md)
+- Manuals: [coordinator](docs/coordinator-user-manual.md) · [caller](docs/caller-user-manual.md) ·
+  [system administrator](docs/system-administrator-guide.md) · [feature catalogue](docs/feature-catalogue.md)
 
 In the screens, each weekly Sunday EMS is called an **EMS Congregation**, shown as e.g.
 "EMS Congregation (1/11/26)". In the code it is the `EmsSession` model.

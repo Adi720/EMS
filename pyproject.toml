@@ -26,4 +26,6 @@ ignore = ["S101", "E501"]
 "**/tests/**" = ["S105", "S106"]  # hard-coded test passwords
 "conftest.py" = ["S105"]
 "apps/imports/synthetic.py" = ["S311"]  # fake data, not cryptography
+"apps/core/management/commands/seed_demo_data.py" = ["S311"]
+"scripts/*.py" = ["S101", "S603", "S607"]
 "config/settings/test.py" = ["S105"]

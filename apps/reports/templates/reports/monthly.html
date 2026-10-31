@@ -35,8 +35,8 @@
   <section class="card mb-4" aria-labelledby="by-session-title">
     <div class="ems-card-header"><h2 class="ems-section-title" id="by-session-title">By congregation</h2></div>
     <div class="table-responsive">
-      <table class="table table-hover table-metrics align-middle">
-        <thead><tr><th>Congregation</th><th style="min-width:9rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
+      <table class="table table-sm table-hover table-metrics align-middle">
+        <thead><tr><th>Congregation</th><th style="min-width:6rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
         <tbody>{% for row in by_session %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj.label }}</a></td><td>{% include "includes/ui/progress.html" with value=row.completed total=row.assigned only %}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
         <tfoot><tr><td>Total</td><td></td>{% include "includes/metric_cells.html" with row=summary %}</tr></tfoot>
       </table>
@@ -46,8 +46,8 @@
   <section class="card mb-3" aria-labelledby="by-caller-title">
     <div class="ems-card-header"><h2 class="ems-section-title" id="by-caller-title">By caller</h2><span class="small ems-muted">all congregations in {{ month_start|date:"F" }}</span></div>
     <div class="table-responsive">
-      <table class="table table-hover table-metrics align-middle">
-        <thead><tr><th>Caller</th><th style="min-width:9rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
+      <table class="table table-sm table-hover table-metrics align-middle">
+        <thead><tr><th>Caller</th><th style="min-width:6rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
         <tbody>{% for row in by_caller %}<tr><td>{{ row.caller_obj }}</td><td>{% include "includes/ui/progress.html" with value=row.completed total=row.assigned only %}</td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}</tbody>
       </table>
     </div>

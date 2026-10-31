@@ -292,7 +292,7 @@ not migrated [C].
 | 1 | Foundation: project, settings, PostgreSQL config, custom user, roles, login, base UI, tests | Done |
 | 2 | Contacts & lifecycle | Done |
 | 3 | Allocations, cycles, rotation, history | Done |
-| 4 | Initial import (synthetic workbook) | Done — real-workbook dry run outstanding (B-1, B-2) |
+| 4 | Initial import | Done; caller column confirmed (B-1). Real import is the coordinator's next step |
 | 5 | Sessions & calling workflow | Done |
 | 6 | Dashboards, reports, exports | Done |
 | 7 | Hardening, deployment, real import, UAT | Security review done; deployment, real import and UAT outstanding |
@@ -309,20 +309,19 @@ Results are only reported from real runs.
 
 ## 14. Open questions
 
-### Blocking the real import only (the application is built and usable without it)
+### Resolved (2026-10-31)
 
-- **B-1 Per-contact caller column.** In `EMS STALL SEWA`, does `CALLING CO-ORDINATER` hold the
-  name of the *caller* allocated to that contact, or the *coordinator* supervising that caller?
-  The importer treats it as the caller (working assumption) and **requires an explicit
-  confirmation checkbox at commit**; it also flags the column automatically if its values look
-  like coordinators or stall-seva members.
-- **B-2 `2026 Calling Sewa status` rows.** Is each row a *caller* (`Name` = caller,
-  `Contact number` = caller's phone, `Total Assigned` = their contact count,
-  `Co-ordinator` = their coordinator)? The importer uses this interpretation only to compare
-  counts; it never changes allocations to force a match.
+- **B-1 Per-contact caller column — confirmed [C].** In `EMS STALL SEWA`, `CALLING CO-ORDINATER`
+  holds the Saint who has been given the seva of calling that contact, i.e. the allocated
+  **caller**. The importer maps it to `Allocation.caller`. The commit screen still asks for an
+  explicit tick as a last safety check, and the automatic "looks like coordinators / stall seva"
+  warnings remain.
+- **B-2 `2026 Calling Sewa status` — optional [C].** The sheet is not reliably maintained, so it
+  is ignored unless the coordinator ticks "compare caller counts" at upload; even then it is only
+  a cross-check and never changes data.
 
-Both must be confirmed, and a dry run of the real workbook reviewed in the preview, before the
-real import is committed.
+No questions block the real import. Remaining step: upload the real workbook, review the preview
+(rows needing attention, caller logins to create), then import.
 
 ### Assumptions to confirm (work proceeds with these)
 
@@ -389,6 +388,6 @@ Routine decisions taken during implementation. All are **[A]** unless marked; ch
 | Unallocated rows | A blank or unknown caller must be mapped to a user or explicitly marked "no caller" |
 
 ### Not done / outstanding
-- Real workbook dry run and coordinator sign-off (B-1, B-2).
+- The real import itself (questions B-1 and B-2 are resolved).
 - Deployment, backups and UAT (N-4); Docker and CI have not been executed.
 - Actual attendance, reminders and historical outcome import remain out of scope.
