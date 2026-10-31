@@ -1,0 +1,15 @@
+{% load ui %}
+{# Usage: {% include "includes/ui/page_header.html" with title="…" subtitle="…" action_url=… action_label="…" action_icon="plus-lg" secondary_url=… secondary_label="…" secondary_icon="…" %} #}
+<div class="ems-page-header">
+  <div class="min-w-0">
+    {% if eyebrow %}<div class="ems-eyebrow mb-1">{{ eyebrow }}</div>{% endif %}
+    <h1 class="ems-page-title">{{ title }}</h1>
+    {% if subtitle %}<p class="ems-page-subtitle">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if action_url or secondary_url %}
+  <div class="ems-page-actions">
+    {% if secondary_url %}<a class="btn btn-outline-secondary" href="{{ secondary_url }}">{% if secondary_icon %}{% icon secondary_icon %}{% endif %}{{ secondary_label }}</a>{% endif %}
+    {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}">{% if action_icon %}{% icon action_icon %}{% endif %}{{ action_label }}</a>{% endif %}
+  </div>
+  {% endif %}
+</div>

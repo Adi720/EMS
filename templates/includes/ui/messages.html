@@ -1,0 +1,6 @@
+{% load ui %}{% for message in messages %}
+<div class="alert alert-{{ message.tags|default:'info' }}" role="{% if message.tags == 'danger' %}alert{% else %}status{% endif %}">
+  {% if message.tags == "success" %}{% icon "check-circle" %}{% elif message.tags == "danger" %}{% icon "exclamation-octagon" %}{% elif message.tags == "warning" %}{% icon "exclamation-triangle" %}{% else %}{% icon "info-circle" %}{% endif %}
+  <div class="alert-body">{{ message }}</div>
+</div>
+{% endfor %}

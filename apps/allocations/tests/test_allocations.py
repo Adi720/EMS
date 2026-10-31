@@ -144,6 +144,18 @@ def test_postgres_rejects_overlapping_closed_ranges(make_contact, caller, caller
         )
 
 
+def test_unallocated_includes_never_allocated_and_ended_allocations(
+    make_contact, caller, allocate, coordinator
+):
+    never = make_contact()
+    current = make_contact()
+    allocate(current, caller)
+    ended = make_contact()
+    allocate(ended, caller)
+    services.end_allocation(ended, effective_date=date(2026, 6, 1), actor=coordinator, reason="test")
+    assert set(services.unallocated_active_contacts()) == {never, ended}
+
+
 # --- Views -------------------------------------------------------------------------
 
 

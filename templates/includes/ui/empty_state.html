@@ -1,0 +1,13 @@
+{% load ui %}
+{# Usage: {% include "includes/ui/empty_state.html" with icon="people" title="…" text="…" action_url=… action_label="…" secondary_url=… secondary_label="…" %} #}
+<div class="ems-empty">
+  <div class="ems-empty__icon">{% icon icon|default:"inbox" %}</div>
+  <h2 class="ems-empty__title">{{ title }}</h2>
+  {% if text %}<p class="ems-empty__text">{{ text }}</p>{% endif %}
+  {% if action_url or secondary_url %}
+  <div class="d-flex flex-wrap justify-content-center gap-2">
+    {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}">{% if action_icon %}{% icon action_icon %}{% endif %}{{ action_label }}</a>{% endif %}
+    {% if secondary_url %}<a class="btn btn-outline-secondary" href="{{ secondary_url }}">{{ secondary_label }}</a>{% endif %}
+  </div>
+  {% endif %}
+</div>

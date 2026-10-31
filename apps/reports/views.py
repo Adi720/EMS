@@ -18,6 +18,7 @@ from apps.core.exports import export_response
 from apps.core.permissions import CoordinatorRequiredMixin
 
 from . import metrics
+from .overview import build_overview
 
 
 def parse_date(value):
@@ -60,6 +61,7 @@ class CoordinatorDashboardView(CoordinatorRequiredMixin, TemplateView):
             )
             context.update(whatsapp_message=message, whatsapp_url=reminders.whatsapp_share_url(message))
         context.update(
+            overview=build_overview(self.request.user, week_session),
             week_label=congregation_label(sunday),
             week_session=week_session,
             older_open=[s for s in sessions if s.is_open and s.session_date < sunday],

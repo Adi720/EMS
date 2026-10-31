@@ -85,7 +85,13 @@ def caller_list_counts():
 
 
 def unallocated_active_contacts():
-    return Contact.objects.filter(status=ContactStatus.ACTIVE).exclude(allocations__effective_to__isnull=True)
+    return Contact.objects.filter(status=ContactStatus.ACTIVE).exclude(pk__in=allocated_contact_ids())
+
+
+def allocated_contact_ids():
+    """Contacts with an open allocation. An explicit subquery: a join-based
+    ``allocations__effective_to__isnull=True`` also matches contacts with no allocation at all."""
+    return open_allocations().values("contact_id")
 
 
 # --- Planning --------------------------------------------------------------

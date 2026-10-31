@@ -1,0 +1,146 @@
+/*
+ * EMS Seva design tokens.
+ * Change colours here only. Each theme sets the --ems-* tokens, and those drive
+ * Bootstrap's own variables so every Bootstrap component follows the theme.
+ * Text/background pairs below meet WCAG AA contrast.
+ */
+
+:root,
+[data-bs-theme="light"] {
+  /* Surfaces */
+  --ems-bg: #f6f7f9;            /* page background */
+  --ems-surface: #ffffff;       /* cards, tables, inputs */
+  --ems-surface-2: #f1f3f6;     /* table headers, subtle panels */
+  --ems-surface-3: #e9edf2;     /* hover */
+  --ems-border: #e3e7ec;
+  --ems-border-strong: #cfd6de;
+
+  /* Text */
+  --ems-text: #0f172a;
+  --ems-text-rgb: 15, 23, 42;
+  --ems-muted: #5b6474;
+  --ems-subtle: #7b8494;
+
+  /* Brand */
+  --ems-accent: #0f766e;        /* teal: primary actions, links, focus */
+  --ems-accent-rgb: 15, 118, 110;
+  --ems-accent-hover: #0b5f59;
+  --ems-accent-soft: #e6f4f2;
+  --ems-accent-text: #0b5f59;
+  --ems-on-accent: #ffffff;
+
+  /* Navigation (deep navy in both themes) */
+  --ems-nav-bg: #0f1b2d;
+  --ems-nav-text: #c9d2e0;
+  --ems-nav-muted: #7d8aa0;
+  --ems-nav-hover: rgba(255, 255, 255, 0.06);
+  --ems-nav-active-bg: rgba(45, 212, 191, 0.14);
+  --ems-nav-active-text: #ffffff;
+  --ems-nav-indicator: #2dd4bf;
+
+  /* Semantic: solid colour, soft background, readable text on soft */
+  --ems-success: #15803d;  --ems-success-rgb: 21, 128, 61;   --ems-success-soft: #e7f6ec; --ems-success-text: #166534; --ems-success-border: #b7e2c4;
+  --ems-warning: #b45309;  --ems-warning-rgb: 180, 83, 9;    --ems-warning-soft: #fdf3e2; --ems-warning-text: #92400e; --ems-warning-border: #f3d4a2;
+  --ems-danger: #b91c1c;   --ems-danger-rgb: 185, 28, 28;    --ems-danger-soft: #fdecec;  --ems-danger-text: #991b1b;  --ems-danger-border: #f3c1c1;
+  --ems-info: #1d4ed8;     --ems-info-rgb: 29, 78, 216;      --ems-info-soft: #e9effd;    --ems-info-text: #1e40af;    --ems-info-border: #c3d3f7;
+  --ems-neutral: #64748b;  --ems-neutral-rgb: 100, 116, 139; --ems-neutral-soft: #eef1f5; --ems-neutral-text: #475569; --ems-neutral-border: #d5dbe3;
+
+  /* Shape and depth */
+  --ems-radius-sm: 6px;
+  --ems-radius: 10px;
+  --ems-radius-lg: 14px;
+  --ems-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --ems-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --ems-focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.28);
+
+  /* Layout */
+  --ems-sidebar-width: 256px;
+  --ems-topbar-height: 60px;
+  --ems-content-max: 1280px;
+
+  /* Typography */
+  --ems-font: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+[data-bs-theme="dark"] {
+  --ems-bg: #0e1116;
+  --ems-surface: #151a21;
+  --ems-surface-2: #1b222b;
+  --ems-surface-3: #222b36;
+  --ems-border: #2a323d;
+  --ems-border-strong: #3a4452;
+
+  --ems-text: #e6eaf0;
+  --ems-text-rgb: 230, 234, 240;
+  --ems-muted: #9aa4b2;
+  --ems-subtle: #7d8796;
+
+  --ems-accent: #14b8a6;
+  --ems-accent-rgb: 20, 184, 166;
+  --ems-accent-hover: #2dd4bf;
+  --ems-accent-soft: rgba(20, 184, 166, 0.14);
+  --ems-accent-text: #5eead4;
+  --ems-on-accent: #04201d;
+
+  --ems-nav-bg: #0a0f15;
+  --ems-nav-text: #c3cbd8;
+  --ems-nav-muted: #6f7b8e;
+
+  --ems-success: #4ade80;  --ems-success-rgb: 74, 222, 128;   --ems-success-soft: rgba(74, 222, 128, 0.12);  --ems-success-text: #86efac; --ems-success-border: rgba(74, 222, 128, 0.3);
+  --ems-warning: #fbbf24;  --ems-warning-rgb: 251, 191, 36;   --ems-warning-soft: rgba(251, 191, 36, 0.12);  --ems-warning-text: #fcd34d; --ems-warning-border: rgba(251, 191, 36, 0.3);
+  --ems-danger: #f87171;   --ems-danger-rgb: 248, 113, 113;   --ems-danger-soft: rgba(248, 113, 113, 0.12);  --ems-danger-text: #fca5a5;  --ems-danger-border: rgba(248, 113, 113, 0.3);
+  --ems-info: #60a5fa;     --ems-info-rgb: 96, 165, 250;      --ems-info-soft: rgba(96, 165, 250, 0.12);     --ems-info-text: #93c5fd;    --ems-info-border: rgba(96, 165, 250, 0.3);
+  --ems-neutral: #94a3b8;  --ems-neutral-rgb: 148, 163, 184;  --ems-neutral-soft: rgba(148, 163, 184, 0.12); --ems-neutral-text: #cbd5e1; --ems-neutral-border: rgba(148, 163, 184, 0.28);
+
+  --ems-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ems-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.25);
+  --ems-focus-ring: 0 0 0 3px rgba(20, 184, 166, 0.35);
+}
+
+/* ---- Map tokens onto Bootstrap's CSS variables (both themes) ------------- */
+
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  --bs-body-font-family: var(--ems-font);
+  --bs-body-font-size: 0.9375rem;
+  --bs-body-line-height: 1.55;
+  --bs-body-color: var(--ems-text);
+  --bs-body-color-rgb: var(--ems-text-rgb);
+  --bs-body-bg: var(--ems-surface);          /* components default to the surface colour */
+  --bs-emphasis-color: var(--ems-text);
+  --bs-heading-color: var(--ems-text);
+  --bs-secondary-color: var(--ems-muted);
+  --bs-tertiary-color: var(--ems-subtle);
+  --bs-secondary-bg: var(--ems-surface-2);
+  --bs-tertiary-bg: var(--ems-surface-2);
+  --bs-border-color: var(--ems-border);
+  --bs-border-color-translucent: var(--ems-border);
+  --bs-border-radius: var(--ems-radius-sm);
+  --bs-border-radius-lg: var(--ems-radius);
+  --bs-border-radius-xl: var(--ems-radius-lg);
+
+  --bs-link-color: var(--ems-accent-text);
+  --bs-link-color-rgb: var(--ems-accent-rgb);
+  --bs-link-hover-color: var(--ems-accent-hover);
+  --bs-link-hover-color-rgb: var(--ems-accent-rgb);
+  --bs-focus-ring-color: rgba(var(--ems-accent-rgb), 0.3);
+
+  --bs-primary: var(--ems-accent);
+  --bs-primary-rgb: var(--ems-accent-rgb);
+  --bs-primary-text-emphasis: var(--ems-accent-text);
+  --bs-primary-bg-subtle: var(--ems-accent-soft);
+  --bs-primary-border-subtle: var(--ems-accent);
+
+  --bs-success: var(--ems-success);   --bs-success-rgb: var(--ems-success-rgb);
+  --bs-success-text-emphasis: var(--ems-success-text); --bs-success-bg-subtle: var(--ems-success-soft); --bs-success-border-subtle: var(--ems-success-border);
+  --bs-warning: var(--ems-warning);   --bs-warning-rgb: var(--ems-warning-rgb);
+  --bs-warning-text-emphasis: var(--ems-warning-text); --bs-warning-bg-subtle: var(--ems-warning-soft); --bs-warning-border-subtle: var(--ems-warning-border);
+  --bs-danger: var(--ems-danger);     --bs-danger-rgb: var(--ems-danger-rgb);
+  --bs-danger-text-emphasis: var(--ems-danger-text);   --bs-danger-bg-subtle: var(--ems-danger-soft);   --bs-danger-border-subtle: var(--ems-danger-border);
+  --bs-info: var(--ems-info);         --bs-info-rgb: var(--ems-info-rgb);
+  --bs-info-text-emphasis: var(--ems-info-text);       --bs-info-bg-subtle: var(--ems-info-soft);       --bs-info-border-subtle: var(--ems-info-border);
+  --bs-secondary-text-emphasis: var(--ems-neutral-text); --bs-secondary-bg-subtle: var(--ems-neutral-soft); --bs-secondary-border-subtle: var(--ems-neutral-border);
+  --bs-light-text-emphasis: var(--ems-neutral-text);   --bs-light-bg-subtle: var(--ems-surface-2);       --bs-light-border-subtle: var(--ems-border);
+  --bs-dark-text-emphasis: var(--ems-text);            --bs-dark-bg-subtle: var(--ems-surface-2);        --bs-dark-border-subtle: var(--ems-border);
+}

@@ -1,0 +1,15 @@
+{% load ui %}
+{# Usage: {% include "includes/ui/progress.html" with label="…" value=… total=… unit="calls" size="lg" bar_class="bg-ems-yes" %} #}
+{% percent value total as pct %}
+<div class="ems-progress">
+  {% if label %}
+  <div class="ems-progress__meta">
+    <span>{{ label }}</span>
+    <span><strong>{{ value|default:0 }}</strong> of {{ total|default:0 }}{% if unit %} {{ unit }}{% endif %} · {{ pct }}%</span>
+  </div>
+  {% endif %}
+  <div class="progress{% if size == 'lg' %} ems-progress--lg{% endif %}" role="progressbar" aria-label="{{ label|default:'Progress' }}"
+       aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+    <div class="progress-bar{% if bar_class %} {{ bar_class }}{% endif %}" style="width: {{ pct }}%"></div>
+  </div>
+</div>

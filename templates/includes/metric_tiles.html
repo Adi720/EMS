@@ -1,11 +1,12 @@
-<div class="row g-2 mb-3">
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Assigned</div><div class="stat-value">{{ summary.assigned }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Completed (attempted)</div><div class="stat-value">{{ summary.completed }}{% if summary.completion_rate is not None %} <span class="fs-6 text-body-secondary">{{ summary.completion_rate }}%</span>{% endif %}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Not yet attempted</div><div class="stat-value">{{ summary.not_attempted }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Connected</div><div class="stat-value">{{ summary.connected }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100 border-success"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Yes</div><div class="stat-value text-success">{{ summary.yes }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Not Possible</div><div class="stat-value">{{ summary.not_possible }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Will Try <span class="visually-hidden">(not confirmed)</span></div><div class="stat-value">{{ summary.will_try }}</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat-tile h-100"><div class="card-body p-2 p-md-3"><div class="text-body-secondary small">Unknown</div><div class="stat-value">{{ summary.unknown }}</div></div></div></div>
+{# The eight calling metrics for a `summary` dict from apps.reports.metrics. #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Assigned" value=summary.assigned icon="people" tone="accent" only %}</div>
+  <div class="col-6 col-lg-3">{% if summary.completion_rate is not None %}{% with note=summary.completion_rate|stringformat:"d"|add:"% of assigned" %}{% include "includes/ui/stat_card.html" with label="Completed (attempted)" value=summary.completed icon="check2-circle" tone="accent" note=note only %}{% endwith %}{% else %}{% include "includes/ui/stat_card.html" with label="Completed (attempted)" value=summary.completed icon="check2-circle" tone="accent" only %}{% endif %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Not yet attempted" value=summary.not_attempted icon="hourglass-split" tone="warning" only %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Connected" value=summary.connected icon="telephone-inbound" tone="info" only %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Yes" value=summary.yes icon="check-circle" tone="success" only %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Not Possible" value=summary.not_possible icon="x-circle" tone="danger" only %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Will Try" value=summary.will_try icon="question-circle" tone="info" note="Not a confirmation" only %}</div>
+  <div class="col-6 col-lg-3">{% include "includes/ui/stat_card.html" with label="Unknown" value=summary.unknown icon="dash-circle" note="Not attempted or not connected" only %}</div>
 </div>
-{% if not summary.reconciles %}<div class="alert alert-danger">Outcome counts do not add up to Assigned — please report this.</div>{% endif %}
+{% if not summary.reconciles %}<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i><div class="alert-body">Outcome counts do not add up to Assigned — please report this.</div></div>{% endif %}

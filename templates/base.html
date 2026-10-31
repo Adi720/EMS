@@ -1,87 +1,74 @@
-{% load static %}<!doctype html>
+{% load static ui %}<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% include "includes/ui/head.html" %}
   <title>{% block title %}EMS Seva{% endblock %} · EMS Seva</title>
-  <script>
-    // Apply the saved theme (or the device's preference) before the page is drawn.
-    (function () {
-      var theme = null;
-      try { theme = localStorage.getItem("ems-theme"); } catch (e) {}
-      if (theme !== "light" && theme !== "dark") {
-        theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      }
-      document.documentElement.setAttribute("data-bs-theme", theme);
-    })();
-  </script>
-  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body class="bg-body-tertiary">
-  <nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
-    <div class="container">
-      <a class="navbar-brand fw-semibold" href="{% url 'core:home' %}">EMS Seva</a>
-      <button type="button" id="theme-toggle" class="btn btn-sm btn-outline-light ms-auto me-2 order-lg-last ms-lg-2 me-lg-0"
-              aria-label="Switch between light and dark theme" title="Light / dark theme">🌙</button>
-      {% if user.is_authenticated %}
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-                aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="mainNav">
-          <ul class="navbar-nav me-auto">
-            {% if is_caller %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'core:caller_dashboard' %}">My calls</a></li>
-            {% endif %}
-            {% if is_coordinator %}
-              <li class="nav-item"><a class="nav-link" href="{% url 'core:coordinator_dashboard' %}">Dashboard</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'contacts:list' %}">Contacts</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'allocations:home' %}">Allocations</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'calling:session_list' %}">Congregations</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'reports:monthly' %}">Monthly</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'imports:list' %}">Import</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'audit:event_list' %}">Audit</a></li>
-            {% endif %}
-          </ul>
-          <ul class="navbar-nav">
-            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:password_change' %}">{{ user }}</a></li>
-            <li class="nav-item">
-              <form method="post" action="{% url 'accounts:logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-link nav-link">Log out</button>
-              </form>
-            </li>
-          </ul>
-        </div>
-      {% endif %}
+<body class="ems-body">
+  <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 btn btn-primary" href="#main">Skip to content</a>
+{% if user.is_authenticated %}
+  <div class="ems-shell">
+    <aside class="ems-sidebar d-none d-lg-flex" aria-label="Sidebar">
+      <a class="ems-brand" href="{% url 'core:home' %}">{% include "includes/ui/brand.html" %}</a>
+      {% include "includes/ui/nav.html" %}
+      <div class="ems-sidebar__footer">{% if is_coordinator %}Coordinator{% if is_caller %} · Caller{% endif %}{% elif is_caller %}Caller{% endif %}</div>
+    </aside>
+
+    <div class="offcanvas offcanvas-start ems-offcanvas d-lg-none" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+      <div class="d-flex align-items-center justify-content-between pe-2">
+        <a class="ems-brand" id="mobileNavLabel" href="{% url 'core:home' %}">{% include "includes/ui/brand.html" %}</a>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close menu"></button>
+      </div>
+      {% include "includes/ui/nav.html" %}
     </div>
-  </nav>
 
-  <main class="container py-4">
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">{{ message }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
-  </main>
+    <div class="ems-main">
+      <header class="ems-topbar">
+        <button type="button" class="ems-icon-btn d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobileNav"
+                aria-controls="mobileNav" aria-label="Open menu">{% icon "list" %}</button>
+        <div class="min-w-0">
+          <div class="ems-topbar__section text-truncate">{% block section %}{% current_section %}{% endblock %}</div>
+        </div>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          {% include "includes/ui/theme_toggle.html" %}
+          <div class="dropdown">
+            <button type="button" class="ems-user-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu for {{ user|display_name }}">
+              <span class="ems-avatar" aria-hidden="true">{{ user|initials }}</span>
+              <span class="ems-user-btn__name d-none d-sm-inline">{{ user|display_name }}</span>
+              {% icon "chevron-down" extra_class="small ems-muted d-none d-sm-inline" %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><h6 class="dropdown-header">{{ user|display_name }}<br><span class="fw-normal">{% if user.is_superuser %}System administrator{% elif is_coordinator %}Coordinator{% elif is_caller %}Caller{% endif %}</span></h6></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">{% icon "key" %}Change password</a></li>
+              {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'admin:index' %}">{% icon "shield-lock" %}Django Admin</a></li>{% endif %}
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item">{% icon "box-arrow-right" %}Log out</button>
+                </form>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </header>
+{% else %}
+  <header class="ems-bare-header d-flex align-items-center justify-content-between">
+    <a class="ems-brand p-0" href="{% url 'accounts:login' %}">{% include "includes/ui/brand.html" %}</a>
+    {% include "includes/ui/theme_toggle.html" %}
+  </header>
+{% endif %}
 
+      <main id="main" class="ems-content" tabindex="-1">
+        {% include "includes/ui/messages.html" %}
+        {% block content %}{% endblock %}
+      </main>
+
+{% if user.is_authenticated %}
+    </div>
+  </div>
+{% endif %}
   <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
-  <script>
-    (function () {
-      var button = document.getElementById("theme-toggle");
-      function show() {
-        var dark = document.documentElement.getAttribute("data-bs-theme") === "dark";
-        button.textContent = dark ? "☀️" : "🌙";
-        button.setAttribute("aria-pressed", dark ? "true" : "false");
-      }
-      button.addEventListener("click", function () {
-        var next = document.documentElement.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
-        document.documentElement.setAttribute("data-bs-theme", next);
-        try { localStorage.setItem("ems-theme", next); } catch (e) {}
-        show();
-      });
-      show();
-    })();
-  </script>
+  <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>

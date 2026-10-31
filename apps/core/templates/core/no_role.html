@@ -1,10 +1,11 @@
-{% extends "base.html" %}
+{% extends "base_auth.html" %}
 {% block title %}No access yet{% endblock %}
 {% block content %}
-<div class="card auth-card shadow-sm">
-  <div class="card-body p-4">
-    <h1 class="h4 mb-3">No role assigned</h1>
-    <p class="mb-0">Your account does not have a Caller or Coordinator role yet. Please ask your system administrator.</p>
-  </div>
-</div>
+<div class="ems-empty__icon mx-auto" aria-hidden="true"><i class="bi bi-person-lock"></i></div>
+<h1 class="ems-auth__title text-center">No role assigned</h1>
+<p class="ems-auth__lead text-center">Your account does not have a Caller or Coordinator role yet. Please ask your system administrator.</p>
+<form method="post" action="{% url 'accounts:logout' %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-outline-secondary w-100">Log out</button>
+</form>
 {% endblock %}

@@ -1,0 +1,44 @@
+{% load ui %}
+{# Main navigation. Shown in the desktop sidebar and the mobile menu. Links only; every view checks access itself. #}
+<nav class="ems-nav" aria-label="Main">
+  {% if is_coordinator %}
+    <div class="ems-nav__group">
+      <div class="ems-nav__label">Overview</div>
+      {% nav_is_active "core:coordinator_dashboard" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:coordinator_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "grid-1x2" %}<span>Dashboard</span></a>
+    </div>
+    <div class="ems-nav__group">
+      <div class="ems-nav__label">Calling</div>
+      {% nav_is_active "calling" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'calling:session_list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "calendar2-check" %}<span>EMS Congregations</span></a>
+      {% if is_caller %}
+        {% nav_is_active "core:caller_dashboard" as on %}
+        <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:caller_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "telephone" %}<span>My calls</span></a>
+      {% endif %}
+    </div>
+    <div class="ems-nav__group">
+      <div class="ems-nav__label">People</div>
+      {% nav_is_active "contacts" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'contacts:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "people" %}<span>Saints</span></a>
+      {% nav_is_active "allocations" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'allocations:home' %}"{% if on %} aria-current="page"{% endif %}>{% icon "diagram-3" %}<span>Team &amp; Assignments</span></a>
+    </div>
+    <div class="ems-nav__group">
+      <div class="ems-nav__label">Insights</div>
+      {% nav_is_active "reports" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'reports:monthly' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart-line" %}<span>Monthly reports</span></a>
+      {% nav_is_active "audit" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'audit:event_list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "clock-history" %}<span>Audit log</span></a>
+    </div>
+    <div class="ems-nav__group">
+      <div class="ems-nav__label">Data</div>
+      {% nav_is_active "imports" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'imports:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "cloud-arrow-up" %}<span>Import</span></a>
+    </div>
+  {% elif is_caller %}
+    <div class="ems-nav__group">
+      {% nav_is_active "core:caller_dashboard" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:caller_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "telephone" %}<span>My calls</span></a>
+    </div>
+  {% endif %}
+</nav>

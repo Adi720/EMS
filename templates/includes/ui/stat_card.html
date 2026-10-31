@@ -1,0 +1,10 @@
+{% load ui %}
+{# Usage: {% include "includes/ui/stat_card.html" with label="…" value=… icon="people" tone="accent|success|warning|danger|info" note="…" url=… %} #}
+{% if url %}<a class="ems-stat{% if tone %} ems-stat--{{ tone }}{% endif %}" href="{{ url }}">{% else %}<div class="ems-stat{% if tone %} ems-stat--{{ tone }}{% endif %}">{% endif %}
+  <div class="ems-stat__top">
+    <span class="ems-stat__label">{{ label }}</span>
+    {% if icon %}<span class="ems-stat__icon">{% icon icon %}</span>{% endif %}
+  </div>
+  <div class="ems-stat__value">{% if value is None or value == "" %}—{% else %}{{ value }}{% endif %}</div>
+  {% if note %}<div class="ems-stat__note">{{ note }}</div>{% endif %}
+{% if url %}</a>{% else %}</div>{% endif %}

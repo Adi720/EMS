@@ -1,100 +1,222 @@
 {% extends "base.html" %}
-{% block title %}Coordinator dashboard{% endblock %}
+{% load ui %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">Coordinator dashboard</h1>
-  <a class="btn btn-outline-primary" href="{% url 'contacts:create' %}">Add contact</a>
-</div>
+{% with ov=overview %}
 
-<div class="card border-primary mb-3">
-  <div class="card-body">
-    {% if week_session and week_session.is_open %}
-      <p class="mb-1 fs-5">✅ Calling is open for <strong>{{ week_session }}</strong></p>
-      <p class="mb-2 small text-body-secondary">Callers can see their lists under My calls. Progress is shown below. <a href="{% url 'calling:session_detail' week_session.pk %}">Full call list &amp; exports</a></p>
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <a class="btn btn-success" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Share reminder on WhatsApp</a>
-        <button type="button" class="btn btn-outline-secondary" id="copy-reminder">Copy message</button>
-        <span class="small text-body-secondary" id="copy-status" aria-live="polite"></span>
-      </div>
-      <textarea class="form-control form-control-sm mt-2" id="reminder-text" rows="3" readonly aria-label="Reminder message">{{ whatsapp_message }}</textarea>
-      <script>
-        document.getElementById("copy-reminder").addEventListener("click", function () {
-          var box = document.getElementById("reminder-text");
-          box.select();
-          var done = function () { document.getElementById("copy-status").textContent = "Copied"; };
-          if (navigator.clipboard) { navigator.clipboard.writeText(box.value).then(done, function () { document.execCommand("copy"); done(); }); }
-          else { document.execCommand("copy"); done(); }
-        });
-      </script>
-    {% elif week_session and week_session.status == "closed" %}
-      <p class="mb-0">Calling for <strong>{{ week_session }}</strong> is closed. <a href="{% url 'calling:session_detail' week_session.pk %}">Open its page</a> to reopen it.</p>
-    {% else %}
-      <form method="post" action="{% url 'calling:start_week' %}" class="d-flex flex-wrap align-items-center gap-3">
-        {% csrf_token %}
-        <button class="btn btn-success btn-lg">Start calling for {{ week_label }}</button>
-        <span class="small text-body-secondary">Builds every caller's list from their allocated contacts{% if older_open %} and closes calling for {% for s in older_open %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}.</span>
-      </form>
-    {% endif %}
-  </div>
-</div>
-
-{% if rotation_due %}<div class="alert alert-warning">Allocation cycle <strong>{{ rotation_due }}</strong> ends {{ rotation_due.planned_end_date|date:"d M Y" }} — time to <a href="{% url 'allocations:home' %}">rotate the caller lists</a>.</div>{% endif %}
-{% if unallocated_count %}<div class="alert alert-warning">{{ unallocated_count }} active contact(s) have no caller and will not be called. <a href="{% url 'allocations:change' %}?caller=none">Allocate them</a>.</div>{% endif %}
-{% if review_due %}<div class="alert alert-info">Temporarily unavailable contacts due for review: {% for c in review_due %}<a href="{% url 'contacts:detail' c.pk %}">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</div>{% endif %}
-
-{% if sessions %}
-<form method="get" class="row g-2 mb-3 align-items-end">
-  <div class="col-12 col-md-5">
-    <label class="form-label small" for="session">Congregation</label>
-    <select class="form-select" id="session" name="session">{% for s in sessions %}<option value="{{ s.pk }}" {% if s == session %}selected{% endif %}>{{ s }} — {{ s.get_status_display }}</option>{% endfor %}</select>
-  </div>
-  <div class="col-12 col-md-4">
-    <label class="form-label small" for="caller">Caller</label>
-    <select class="form-select" id="caller" name="caller"><option value="">All callers</option>{% for c in callers %}<option value="{{ c.pk }}" {% if selected_caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
-  </div>
-  <input type="hidden" name="from" value="{{ date_from }}"><input type="hidden" name="to" value="{{ date_to }}">
-  <div class="col-12 col-md-3"><button class="btn btn-secondary w-100">Show</button></div>
-</form>
-{% endif %}
-
-{% if session %}
-  <div class="d-flex justify-content-between align-items-center"><h2 class="h5">{{ session }} <span class="badge text-bg-secondary fs-6 align-middle">{{ session.get_status_display }}</span></h2><a class="small" href="{% url 'calling:session_detail' session.pk %}">Details &amp; exports</a></div>
-  {% include "includes/metric_tiles.html" %}
-  {% if withdrawn_count %}<p class="small text-body-secondary">{{ withdrawn_count }} withdrawn call(s) not counted.</p>{% endif %}
-  <div class="card mb-4">
-    <div class="card-header fw-semibold">Progress by caller</div>
-    <div class="table-responsive">
-      <table class="table table-sm mb-0 table-metrics">
-        <thead><tr><th>Caller</th>{% include "includes/metric_headers.html" %}</tr></thead>
-        <tbody>
-          {% for row in by_caller %}<tr><td><a href="{% url 'calling:session_detail' session.pk %}?caller={{ row.caller }}">{{ row.caller_obj }}</a></td>{% include "includes/metric_cells.html" %}</tr>
-          {% empty %}<tr><td colspan="10" class="text-body-secondary">{% if session.status == "draft" %}Calling has not started for this congregation yet.{% else %}No calls.{% endif %}</td></tr>{% endfor %}
-        </tbody>
-      </table>
+{# A. Welcome: one contextual action for the current state #}
+<section class="ems-hero mb-4" aria-labelledby="hero-title">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div class="min-w-0">
+      <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
+      {% if ov.state == "setup" %}
+        <h1 class="ems-hero__title" id="hero-title">Let's get Calling Seva ready</h1>
+        <p class="ems-hero__text">You coordinate the calling team: the Saints, who calls whom, and each Sunday's calling. {{ ov.steps_done }} of {{ ov.steps_total }} setup steps are done.</p>
+      {% elif ov.state == "ready" %}
+        <h1 class="ems-hero__title" id="hero-title">Ready for {{ week_label }}</h1>
+        <p class="ems-hero__text">{{ ov.allocated }} Saint{{ ov.allocated|pluralize }} across {{ ov.caller_count }} caller{{ ov.caller_count|pluralize }} will be called. Start calling to build each caller's list.</p>
+      {% elif ov.state == "calling" %}
+        <h1 class="ems-hero__title" id="hero-title">Calling is open for <strong>{{ week_session }}</strong></h1>
+        <p class="ems-hero__text">Callers see their lists under My calls. Share the reminder with your seva group and follow progress below.</p>
+      {% else %}
+        <h1 class="ems-hero__title" id="hero-title">Calling closed for {{ week_session }}</h1>
+        <p class="ems-hero__text">The results are final. Review them or export the report.</p>
+      {% endif %}
+    </div>
+    <div class="text-lg-end">
+      <div class="ems-eyebrow">Upcoming</div>
+      <div class="fw-semibold">{{ week_label }}</div>
+      {% if week_session %}<span class="badge {% if week_session.is_open %}text-bg-success{% elif week_session.status == 'closed' %}text-bg-secondary{% else %}text-bg-info{% endif %} mt-1">{{ week_session.get_status_display }}</span>{% endif %}
     </div>
   </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+    {% if ov.state == "setup" %}
+      {% if ov.next_step.key == "calling" %}
+        <form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}<button class="btn btn-primary">{% icon "play-fill" %}Start calling for {{ week_label }}</button></form>
+      {% elif ov.next_step.url %}
+        <a class="btn btn-primary" href="{{ ov.next_step.url }}">{% icon "arrow-right" %}{{ ov.next_step.action }}</a>
+      {% endif %}
+    {% elif ov.state == "ready" %}
+      <form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}<button class="btn btn-primary btn-lg">{% icon "play-fill" %}Start calling for {{ week_label }}</button></form>
+      {% if older_open %}<span class="small ems-muted">Also closes calling for {% for s in older_open %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}.</span>{% endif %}
+    {% elif ov.state == "calling" %}
+      <a class="btn btn-primary" href="{{ whatsapp_url }}" target="_blank" rel="noopener">{% icon "whatsapp" %}Share reminder on WhatsApp</a>
+      <a class="btn btn-outline-secondary" href="{% url 'calling:session_detail' week_session.pk %}">{% icon "list-check" %}View call list</a>
+      <button type="button" class="btn btn-outline-secondary" data-copy-target="#reminder-text" data-copy-status="#copy-status">{% icon "clipboard" %}Copy message</button>
+      <span class="small ems-muted" id="copy-status" aria-live="polite"></span>
+    {% else %}
+      <a class="btn btn-primary" href="{% url 'calling:session_detail' week_session.pk %}">{% icon "clipboard-data" %}View results</a>
+      <a class="btn btn-outline-secondary" href="{% url 'reports:monthly' %}">{% icon "bar-chart-line" %}Monthly report</a>
+    {% endif %}
+  </div>
+  {% if ov.state == "calling" %}
+    <label class="visually-hidden" for="reminder-text">Reminder message</label>
+    <textarea class="form-control form-control-sm mt-3" id="reminder-text" rows="3" readonly>{{ whatsapp_message }}</textarea>
+  {% endif %}
+</section>
+
+{# Notices #}
+{% if rotation_due %}<div class="alert alert-warning">{% icon "arrow-repeat" %}<div class="alert-body">Allocation cycle <strong>{{ rotation_due }}</strong> ends {{ rotation_due.planned_end_date|date:"d M Y" }}. <a class="alert-link" href="{% url 'allocations:home' %}">Time to rotate the caller lists</a>.</div></div>{% endif %}
+{% if ov.state != "setup" and ov.unallocated %}<div class="alert alert-warning">{% icon "person-exclamation" %}<div class="alert-body">{{ ov.unallocated }} active Saint{{ ov.unallocated|pluralize }} have no caller and will not be called. <a class="alert-link" href="{% url 'allocations:change' %}?caller=none&amp;kind=assign">Assign them</a>.</div></div>{% endif %}
+{% if review_due %}<div class="alert alert-info">{% icon "calendar-event" %}<div class="alert-body">Due for review (temporarily unavailable): {% for c in review_due %}<a class="alert-link" href="{% url 'contacts:detail' c.pk %}">{{ c }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</div></div>{% endif %}
+
+{# E. Setup checklist (only remaining steps) #}
+{% if ov.state == "setup" and ov.steps_remaining %}
+<section class="card mb-4" aria-labelledby="setup-title">
+  <div class="ems-card-header">
+    <h2 class="ems-section-title" id="setup-title">Setup</h2>
+    <span class="small ems-muted">{{ ov.steps_done }} of {{ ov.steps_total }} done</span>
+  </div>
+  <ol class="ems-checklist">
+    {% for step in ov.steps_remaining %}
+    <li class="ems-checklist__item{% if step.next %} ems-checklist__item--next{% endif %}">
+      <span class="ems-checklist__num">{{ forloop.counter|add:ov.steps_done }}</span>
+      <div class="ems-checklist__body">
+        <div class="ems-checklist__title">{{ step.title }}</div>
+        <p class="ems-checklist__text">{{ step.text }}</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2 justify-content-end">
+        {% if step.key == "calling" %}
+          {% if step.next %}<form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}<button class="btn btn-primary btn-sm">Start calling</button></form>{% endif %}
+        {% else %}
+          {% if step.secondary_url %}<a class="btn btn-outline-secondary btn-sm" href="{{ step.secondary_url }}">{{ step.secondary_action }}</a>{% endif %}
+          {% if step.url %}<a class="btn btn-sm {% if step.next %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="{{ step.url }}">{{ step.action }}</a>{% endif %}
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
 {% endif %}
 
+{# B. Key metrics: real values only ("—" when there is no congregation yet) #}
+<section class="row g-3 mb-4" aria-label="Key figures">
+  <div class="col-6 col-md-4 col-xl-2">{% url 'contacts:list' as saints_url %}{% include "includes/ui/stat_card.html" with label="Active Saints" value=ov.active_saints icon="people" tone="accent" url=saints_url|add:"?status=active" only %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% url 'allocations:home' as team_url %}{% include "includes/ui/stat_card.html" with label="Active callers" value=ov.caller_count icon="headset" tone="accent" url=team_url only %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% if ov.unallocated %}{% with note=ov.unallocated|stringformat:"d"|add:" without a caller" %}{% include "includes/ui/stat_card.html" with label="Assigned Saints" value=ov.allocated icon="diagram-3" tone="warning" note=note only %}{% endwith %}{% else %}{% include "includes/ui/stat_card.html" with label="Assigned Saints" value=ov.allocated icon="diagram-3" tone="info" only %}{% endif %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% include "includes/ui/stat_card.html" with label="Calls completed" value=summary.completed icon="check2-circle" tone="accent" only %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% include "includes/ui/stat_card.html" with label="Pending calls" value=summary.not_attempted icon="hourglass-split" tone="warning" only %}</div>
+  <div class="col-6 col-md-4 col-xl-2">{% include "includes/ui/stat_card.html" with label="Yes responses" value=summary.yes icon="check-circle" tone="success" only %}</div>
+</section>
+
+<div class="row g-4 mb-4">
+  {# C. Calling progress #}
+  <div class="col-xl-8">
+    <section class="card h-100" aria-labelledby="progress-title">
+      <div class="ems-card-header">
+        <div class="min-w-0">
+          <h2 class="ems-section-title" id="progress-title">Calling progress</h2>
+          {% if session %}<div class="small ems-muted">{{ session }} · {{ session.get_status_display }}</div>{% endif %}
+        </div>
+        {% if sessions %}
+        <form method="get" class="d-flex flex-wrap gap-2">
+          <label class="visually-hidden" for="session">Congregation</label>
+          <select class="form-select form-select-sm" id="session" name="session" style="max-width: 15rem">{% for s in sessions %}<option value="{{ s.pk }}" {% if s == session %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+          <label class="visually-hidden" for="caller">Caller</label>
+          <select class="form-select form-select-sm" id="caller" name="caller" style="max-width: 12rem"><option value="">All callers</option>{% for c in callers %}<option value="{{ c.pk }}" {% if selected_caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+          <input type="hidden" name="from" value="{{ date_from }}"><input type="hidden" name="to" value="{{ date_to }}">
+          <button class="btn btn-sm btn-outline-secondary">Show</button>
+        </form>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if session and summary.assigned %}
+          {% include "includes/ui/progress.html" with label="Calls completed" value=summary.completed total=summary.assigned unit="calls" size="lg" only %}
+          <div class="row g-3 mt-1 mb-3">
+            <div class="col-sm-6">
+              {% include "includes/ui/progress.html" with label="Connected" value=summary.connected total=summary.completed bar_class="bg-ems-try" only %}
+            </div>
+            <div class="col-sm-6">
+              {% percent summary.yes summary.assigned as p_yes %}{% percent summary.not_possible summary.assigned as p_no %}{% percent summary.will_try summary.assigned as p_try %}
+              <div class="ems-progress__meta"><span>Responses</span><span><strong>{{ summary.yes }}</strong> Yes</span></div>
+              <div class="progress-stacked" role="img" aria-label="Yes {{ summary.yes }}, Not Possible {{ summary.not_possible }}, Will Try {{ summary.will_try }}, Unknown {{ summary.unknown }}">
+                <div class="progress" style="width: {{ p_yes }}%"><div class="progress-bar bg-ems-yes"></div></div>
+                <div class="progress" style="width: {{ p_no }}%"><div class="progress-bar bg-ems-no"></div></div>
+                <div class="progress" style="width: {{ p_try }}%"><div class="progress-bar bg-ems-try"></div></div>
+              </div>
+              <div class="ems-legend mt-2">
+                <span><i class="ems-dot text-ems-yes"></i>Yes {{ summary.yes }}</span>
+                <span><i class="ems-dot text-ems-no"></i>Not Possible {{ summary.not_possible }}</span>
+                <span><i class="ems-dot text-ems-try"></i>Will Try {{ summary.will_try }}</span>
+                <span><i class="ems-dot text-ems-unknown"></i>Unknown {{ summary.unknown }}</span>
+              </div>
+            </div>
+          </div>
+          <h3 class="ems-eyebrow mt-4 mb-2">By caller</h3>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Caller</th><th style="width: 40%">Completed</th><th class="text-end">Pending</th><th class="text-end">Yes</th></tr></thead>
+              <tbody>
+                {% for row in by_caller %}
+                <tr>
+                  <td><a href="{% url 'calling:session_detail' session.pk %}?caller={{ row.caller }}">{{ row.caller_obj }}</a></td>
+                  <td>{% include "includes/ui/progress.html" with label=" " value=row.completed total=row.assigned only %}</td>
+                  <td class="text-end ems-num">{{ row.not_attempted }}</td>
+                  <td class="text-end ems-num text-ems-yes fw-semibold">{{ row.yes }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if withdrawn_count %}<p class="small ems-muted mt-2 mb-0">{{ withdrawn_count }} withdrawn call(s) are not counted.</p>{% endif %}
+        {% elif session %}
+          {% if session.status == "draft" %}
+            {% include "includes/ui/empty_state.html" with icon="calendar2-check" title="Calling has not started" text="Start calling to build each caller's list for this congregation." only %}
+          {% else %}
+            {% include "includes/ui/empty_state.html" with icon="telephone" title="No calls in this view" text="There are no calls for this congregation with the selected filters." only %}
+          {% endif %}
+        {% else %}
+          {% include "includes/ui/empty_state.html" with icon="calendar2-check" title="No congregations yet" text="When you start calling for a Sunday, progress for every caller appears here." only %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  {# D. Quick actions #}
+  <div class="col-xl-4">
+    <section class="card h-100" aria-labelledby="actions-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="actions-title">Quick actions</h2></div>
+      <div class="card-body d-grid gap-2">
+        {% if ov.state == "ready" %}
+          <form method="post" action="{% url 'calling:start_week' %}">{% csrf_token %}
+            <button class="ems-action">{% icon "play-circle" %}<span>Start calling<small>{{ week_label }}</small></span></button>
+          </form>
+        {% elif week_session and week_session.status != "draft" %}
+          <a class="ems-action" href="{% url 'calling:session_detail' week_session.pk %}">{% icon "list-check" %}<span>This week's calls<small>{{ week_session }}</small></span></a>
+        {% endif %}
+        <a class="ems-action" href="{% url 'contacts:create' %}">{% icon "person-plus" %}<span>Add Saint<small>One person, with their caller</small></span></a>
+        {% if user.is_superuser %}<a class="ems-action" href="{% url 'admin:accounts_user_add' %}">{% icon "headset" %}<span>Add caller<small>Create a login in Django Admin</small></span></a>{% endif %}
+        <a class="ems-action" href="{% if ov.staged_import %}{% url 'imports:detail' ov.staged_import.pk %}{% else %}{% url 'imports:upload' %}{% endif %}">{% icon "file-earmark-spreadsheet" %}<span>Import Excel<small>{% if ov.staged_import %}Continue import #{{ ov.staged_import.pk }}{% else %}Upload the EMS workbook{% endif %}</small></span></a>
+        <a class="ems-action" href="{% url 'allocations:home' %}">{% icon "diagram-3" %}<span>Manage assignments<small>Who calls whom</small></span></a>
+        <a class="ems-action" href="{% url 'reports:monthly' %}">{% icon "bar-chart-line" %}<span>Monthly report<small>Totals and exports</small></span></a>
+      </div>
+    </section>
+  </div>
+</div>
+
+{# Previous congregations #}
 {% if history %}
-<div class="card">
-  <div class="card-header">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-12 col-md-4 fw-semibold">Previous congregations{% if selected_caller %} (selected caller){% endif %}</div>
+<section class="card mb-3" aria-labelledby="history-title">
+  <div class="ems-card-header">
+    <h2 class="ems-section-title" id="history-title">Previous congregations{% if selected_caller %} <span class="small ems-muted fw-normal">(selected caller)</span>{% endif %}</h2>
+    <form method="get" class="d-flex flex-wrap align-items-end gap-2">
       <input type="hidden" name="session" value="{{ session.pk|default:'' }}"><input type="hidden" name="caller" value="{{ selected_caller }}">
-      <div class="col-5 col-md-3"><label class="form-label small" for="from">From</label><input class="form-control form-control-sm" type="date" id="from" name="from" value="{{ date_from }}"></div>
-      <div class="col-5 col-md-3"><label class="form-label small" for="to">To</label><input class="form-control form-control-sm" type="date" id="to" name="to" value="{{ date_to }}"></div>
-      <div class="col-2 col-md-2"><button class="btn btn-sm btn-secondary w-100">Go</button></div>
+      <div><label class="form-label small mb-1" for="from">From</label><input class="form-control form-control-sm" type="date" id="from" name="from" value="{{ date_from }}"></div>
+      <div><label class="form-label small mb-1" for="to">To</label><input class="form-control form-control-sm" type="date" id="to" name="to" value="{{ date_to }}"></div>
+      <button class="btn btn-sm btn-outline-secondary">Filter</button>
     </form>
   </div>
   <div class="table-responsive">
-    <table class="table table-sm mb-0 table-metrics">
+    <table class="table table-hover table-metrics">
       <thead><tr><th>Congregation</th>{% include "includes/metric_headers.html" %}</tr></thead>
       <tbody>
         {% for row in history %}<tr><td><a href="{% url 'calling:session_detail' row.session %}">{{ row.session_obj.label }}</a></td>{% include "includes/metric_cells.html" %}</tr>{% endfor %}
       </tbody>
     </table>
   </div>
-</div>
+</section>
 {% endif %}
-<p class="small text-body-secondary mt-2">Completed = at least one attempt (any outcome). Connected = Yes, Not Possible or Will Try. Unknown = not attempted or Call Not Connected. Will Try is never counted as Yes. Actual attendance is not tracked.</p>
+<p class="small ems-muted">Completed = at least one attempt (any outcome). Connected = Yes, Not Possible or Will Try. Unknown = not attempted or Call Not Connected. Will Try is never counted as Yes. Actual attendance is not tracked.</p>
+{% endwith %}
 {% endblock %}
