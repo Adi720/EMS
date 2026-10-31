@@ -4,7 +4,7 @@
 {% block content %}
 <div class="ems-page-header">
   <div class="min-w-0">
-    <h1 class="ems-page-title">Team &amp; Assignments</h1>
+    <h1 class="ems-page-title">Assignments</h1>
     <p class="ems-page-subtitle">Who calls whom. Each Saint stays with one caller for about three months; rotate the lists when a cycle ends.</p>
   </div>
   <div class="ems-page-actions">
@@ -15,17 +15,17 @@
 </div>
 
 {% if rotation_due %}
-<div class="alert alert-warning">{% icon "arrow-repeat" %}<div class="alert-body">Cycle <strong>{{ rotation_due }}</strong> is planned to end on {{ rotation_due.planned_end_date|date:"d M Y" }}. Time to rotate — use <a class="alert-link" href="{% url 'allocations:change' %}?kind=swap">Swap caller lists</a>, or start a new cycle under Advanced.</div></div>
+<div class="alert alert-warning">{% icon "arrow-repeat" %}<div class="alert-body">Cycle <strong>{{ rotation_due }}</strong> is planned to end on {{ rotation_due.planned_end_date|date:"j M Y" }}. Time to rotate — use <a class="alert-link" href="{% url 'allocations:change' %}?kind=swap">Swap caller lists</a>, or start a new cycle under Advanced.</div></div>
 {% endif %}
 
 {% if unallocated %}
 <section class="card border-warning-subtle mb-4" aria-labelledby="unallocated-title">
   <div class="ems-card-header">
     <div>
-      <h2 class="ems-section-title" id="unallocated-title">{% icon "person-exclamation" extra_class="text-warning" %} {{ unallocated|length }} active Saint{{ unallocated|length|pluralize }} without a caller</h2>
+      <h2 class="ems-section-title" id="unallocated-title">{% icon "person-exclamation" extra_class="text-warning" %} {{ unallocated|length }} Saint{{ unallocated|length|pluralize }} waiting for a caller</h2>
       <div class="small ems-muted">They will not be called until they have a caller.</div>
     </div>
-    <a class="btn btn-primary btn-sm" href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">Assign them</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">Assign Caller</a>
   </div>
   <div class="card-body small">
     {% for c in unallocated|slice:":12" %}<a href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}{% if unallocated|length > 12 %} and {{ unallocated|length|add:"-12" }} more — <a href="{% url 'contacts:list' %}?caller=none&amp;status=active">see all</a>{% endif %}
@@ -86,9 +86,9 @@
       <tbody>
         {% for op in operations %}
         <tr>
-          <td class="text-nowrap"><a href="{% url 'allocations:operation' op.pk %}">{{ op.performed_at|date:"d M Y, H:i" }}</a></td>
+          <td class="text-nowrap"><a href="{% url 'allocations:operation' op.pk %}">{{ op.performed_at|date:"j M Y, H:i" }}</a></td>
           <td>{{ op.get_kind_display }}{% if op.reason %}<div class="small ems-muted">{{ op.reason|truncatechars:70 }}</div>{% endif %}</td>
-          <td class="text-nowrap">{{ op.effective_date|date:"d M Y" }}</td>
+          <td class="text-nowrap">{{ op.effective_date|date:"j M Y" }}</td>
           <td class="text-end ems-num">{{ op.change_count }}</td>
           <td>{{ op.performed_by|default:"system" }}</td>
         </tr>
@@ -111,7 +111,7 @@
     <h3 class="ems-eyebrow">Cycles</h3>
     <ul class="list-group list-group-flush small">
       {% for c in cycles %}
-      <li class="list-group-item px-0 d-flex justify-content-between gap-2"><span><strong>{{ c.name }}</strong> · {{ c.start_date|date:"d M Y" }} – {{ c.planned_end_date|date:"d M Y" }}</span><span class="badge text-bg-{% if c.status == 'active' %}success{% elif c.status == 'planned' %}info{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></li>
+      <li class="list-group-item px-0 d-flex justify-content-between gap-2"><span><strong>{{ c.name }}</strong> · {{ c.start_date|date:"j M Y" }} – {{ c.planned_end_date|date:"j M Y" }}</span><span class="badge text-bg-{% if c.status == 'active' %}success{% elif c.status == 'planned' %}info{% else %}secondary{% endif %}">{{ c.get_status_display }}</span></li>
       {% empty %}<li class="list-group-item px-0 ems-muted">No cycles yet. The first is usually created during the initial import.</li>
       {% endfor %}
     </ul>

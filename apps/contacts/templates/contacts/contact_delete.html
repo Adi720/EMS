@@ -28,7 +28,7 @@
       <div class="alert alert-warning mt-3">{% icon "shield-exclamation" %}
         <div class="alert-body"><strong>Kept — already called:</strong>
           {% for c in kept %}<a class="alert-link" href="{% url 'contacts:detail' c.pk %}">{{ c.full_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
-          Their call results are part of past congregation reports. To stop calling them, open the Saint and <strong>Change status</strong> to Inactive or Do not call.</div>
+          Their call results are part of past congregation reports. To stop calling them, open the Saint and <strong>Change status</strong> to Inactive.</div>
       </div>
       {% if not can %}<a class="btn btn-outline-secondary" href="{{ next }}">Back to Saints</a>{% endif %}
     {% endif %}

@@ -65,6 +65,11 @@ def send_weekly_reminders(today=None, *, auto_start=None):
     """
     auto_start = settings.REMINDER_AUTO_START if auto_start is None else auto_start
     result = {"session": None, "started": False, "sent": [], "no_email": [], "already": [], "failed": []}
+    held = EmsSession.objects.filter(session_date=next_sunday(today), venue="", on_hold=True).first()
+    if held:
+        result["session"] = None
+        result["held"] = held
+        return result
     if auto_start:
         session, totals, _ = start_weekly_calling(None, today=today)
         result["started"] = bool(totals)

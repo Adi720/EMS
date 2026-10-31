@@ -24,6 +24,13 @@ class CallerRequiredMixin(RoleRequiredMixin):
         return user.is_caller
 
 
+class StallLeadRequiredMixin(RoleRequiredMixin):
+    """Stall leads add new Saints; coordinators may use the same screen."""
+
+    def has_role(self, user):
+        return user.is_stall_lead or user.is_coordinator
+
+
 class CoordinatorRequiredMixin(RoleRequiredMixin):
     """Coordinators and system administrators."""
 

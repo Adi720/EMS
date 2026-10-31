@@ -8,51 +8,61 @@
     <p class="ems-page-subtitle">{{ active_count }} active Saint{{ active_count|pluralize }}{% if unallocated_count %} · <a href="?caller=none&amp;status=active">{{ unallocated_count }} without a caller</a>{% endif %}</p>
   </div>
   <div class="ems-page-actions">
-    <div class="dropdown">
+    <div class="dropdown d-none d-sm-block">
       <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% icon "download" %}Export</button>
+      <ul class="dropdown-menu dropdown-menu-end">{% include "contacts/export_menu.html" %}</ul>
+    </div>
+    <a class="btn btn-outline-secondary d-none d-sm-inline-flex" href="{% url 'imports:list' %}">{% icon "file-earmark-spreadsheet" %}Import Excel</a>
+    <a class="btn btn-primary" href="{% url 'contacts:create' %}">{% icon "person-plus" %}Add Saint</a>
+    <div class="dropdown d-sm-none">
+      <button class="btn btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More: export and import">{% icon "three-dots" %}</button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Excel</a></li>
-        <li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=csv">{% icon "filetype-csv" %}CSV</a></li>
+        <li><a class="dropdown-item" href="{% url 'imports:list' %}">{% icon "file-earmark-spreadsheet" %}Import Excel</a></li>
         <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item small" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx&amp;include_dnc=1">{% icon "exclamation-triangle" %}Excel including Do not call</a></li>
+        {% include "contacts/export_menu.html" %}
       </ul>
     </div>
-    <a class="btn btn-outline-secondary" href="{% url 'imports:list' %}">{% icon "file-earmark-spreadsheet" %}Import Excel</a>
-    <a class="btn btn-primary" href="{% url 'contacts:create' %}">{% icon "person-plus" %}Add Saint</a>
   </div>
 </div>
 
-<ul class="nav nav-pills flex-nowrap overflow-auto gap-1 mb-3 pb-1" aria-label="Filter by status">
+<nav class="ems-chips ems-chips--wrap mb-3" aria-label="Filter by status">
   {% for value, label, count in status_tabs %}
-  <li class="nav-item"><a class="nav-link text-nowrap py-1 px-3{% if value == selected_status %} active{% endif %}"{% if value == selected_status %} aria-current="page"{% endif %} href="?{% if status_querystring %}{{ status_querystring }}&amp;{% endif %}status={{ value }}">{{ label }} <span class="ems-num opacity-75">{{ count }}</span></a></li>
+  <a class="ems-chip{% if value == selected_status %} active{% endif %}"{% if value == selected_status %} aria-current="page"{% endif %} href="?{% if status_querystring %}{{ status_querystring }}&amp;{% endif %}status={{ value }}">{{ label }} <span>{{ count }}</span></a>
   {% endfor %}
-</ul>
+</nav>
 
 <form method="get" class="card card-body mb-3" role="search">
   <input type="hidden" name="status" value="{{ selected_status }}">
   <div class="row g-2 align-items-end">
-    <div class="col-12 col-lg-5">
-      <label class="form-label small" for="q">Search</label>
-      <div class="input-group">
-        <span class="input-group-text bg-transparent">{% icon "search" %}</span>
-        <input class="form-control" id="q" name="q" type="search" value="{{ filter_form.data.q|default:'' }}" placeholder="Name or mobile number">
+    <div class="col-12 col-md-5">
+      <label class="form-label small d-none d-md-block" for="q">Search</label>
+      <div class="d-flex gap-2">
+        <div class="input-group">
+          <span class="input-group-text bg-transparent">{% icon "search" %}</span>
+          <input class="form-control" id="q" name="q" type="search" value="{{ filter_form.data.q|default:'' }}" placeholder="Name or mobile number" aria-label="Search by name or mobile number">
+        </div>
+        <button class="btn btn-outline-secondary d-md-none flex-shrink-0{% if filter_form.data.area or filter_form.data.caller %} active{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#more-filters" aria-expanded="{% if filter_form.data.area or filter_form.data.caller %}true{% else %}false{% endif %}" aria-controls="more-filters" aria-label="More filters">{% icon "sliders" %}</button>
       </div>
     </div>
-    <div class="col-6 col-lg-3">
-      <label class="form-label small" for="area">Area</label>
-      <input class="form-control" id="area" name="area" list="area-options" value="{{ filter_form.data.area|default:'' }}" placeholder="Any area">
-      <datalist id="area-options">{% for a in areas %}<option value="{{ a }}">{% endfor %}</datalist>
+    <div class="col-12 col-md-5 collapse ems-filters-more{% if filter_form.data.area or filter_form.data.caller %} show{% endif %}" id="more-filters">
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label small" for="area">Area</label>
+          <input class="form-control" id="area" name="area" list="area-options" value="{{ filter_form.data.area|default:'' }}" placeholder="Any area">
+          <datalist id="area-options">{% for a in areas %}<option value="{{ a }}">{% endfor %}</datalist>
+        </div>
+        <div class="col-6">
+          <label class="form-label small" for="caller">Caller</label>
+          <select class="form-select" id="caller" name="caller">
+            <option value="">Any caller</option>
+            <option value="none" {% if filter_form.data.caller == "none" %}selected{% endif %}>No caller</option>
+            {% for c in callers %}<option value="{{ c.pk }}" {% if filter_form.data.caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="col-6 col-lg-2">
-      <label class="form-label small" for="caller">Caller</label>
-      <select class="form-select" id="caller" name="caller">
-        <option value="">Any caller</option>
-        <option value="none" {% if filter_form.data.caller == "none" %}selected{% endif %}>No caller</option>
-        {% for c in callers %}<option value="{{ c.pk }}" {% if filter_form.data.caller == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
-      </select>
-    </div>
-    <div class="col-12 col-lg-2 d-flex gap-2">
-      <button class="btn btn-primary flex-fill">Apply</button>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button class="btn btn-primary flex-fill">Search</button>
       {% if has_filters %}<a class="btn btn-outline-secondary" href="{% url 'contacts:list' %}" aria-label="Clear filters">{% icon "x-lg" %}</a>{% endif %}
     </div>
   </div>
@@ -70,7 +80,7 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover align-middle">
-      <thead><tr><th class="ems-col-check"><input class="form-check-input" type="checkbox" data-select-all="ids" aria-label="Select all Saints on this page"></th><th>Saint</th><th>Mobile</th><th>Area</th><th>Assigned caller</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
+      <thead><tr><th class="ems-col-check"><input class="form-check-input" type="checkbox" data-select-all="ids" aria-label="Select all Saints on this page"></th><th>Saint</th><th>Mobile</th><th>Area</th><th>Caller</th><th>Status</th><th class="text-end"><span class="visually-hidden">Actions</span></th></tr></thead>
       <tbody>
         {% for c in object_list %}
         <tr>
@@ -100,20 +110,16 @@
 </div>
 </form>
 
-{# Phone: cards #}
-<div class="d-md-none d-grid gap-2">
+{# Phone: one compact row per Saint #}
+<div class="card d-md-none">
   {% for c in object_list %}
-  <a class="card text-decoration-none" href="{% url 'contacts:detail' c.pk %}">
-    <div class="card-body py-3">
-      <div class="d-flex justify-content-between align-items-start gap-2">
-        <div class="min-w-0">
-          <div class="fw-semibold text-body text-truncate">{{ c.full_name }}</div>
-          <div class="small ems-muted">{{ c.area }} · <span class="ems-num">{{ c.phone_display }}</span></div>
-          <div class="small ems-muted">{% icon "headset" %} {{ c.caller_label|default:"No caller" }}</div>
-        </div>
-        {% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}
-      </div>
+  <a class="ems-saint-row" href="{% url 'contacts:detail' c.pk %}">
+    <div class="min-w-0 flex-fill">
+      <div class="ems-saint-row__name">{{ c.full_name }}</div>
+      <div class="ems-saint-row__meta">{{ c.area }} · <span class="ems-num">{{ c.phone_display }}</span></div>
+      <div class="ems-saint-row__meta">{% icon "headset" %} {{ c.caller_label|default:"No caller" }}</div>
     </div>
+    {% include "contacts/status_badge.html" with status=c.status label=c.get_status_display %}
   </a>
   {% endfor %}
 </div>

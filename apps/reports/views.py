@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
 
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -14,6 +15,8 @@ from apps.calling.models import CallTask, EmsSession, Outcome, TaskStatus, congr
 from apps.calling.services import next_sunday
 from apps.calling.views import default_session
 from apps.contacts.models import Contact, ContactStatus
+from apps.contacts.services import promote_new_saints
+from apps.core.dates import add_months
 from apps.core.exports import export_response
 from apps.core.permissions import CoordinatorRequiredMixin
 
@@ -28,10 +31,17 @@ def parse_date(value):
         return None
 
 
+def saints_by_status():
+    """[(status value, label, count)] for every Saint status, for the dashboard strip."""
+    counts = dict(Contact.objects.order_by().values_list("status").annotate(n=Count("id")))
+    return [(value, label, counts.get(value, 0)) for value, label in ContactStatus.choices]
+
+
 class CoordinatorDashboardView(CoordinatorRequiredMixin, TemplateView):
     template_name = "reports/coordinator_dashboard.html"
 
     def get_context_data(self, **kwargs):
+        promote_new_saints()
         context = super().get_context_data(**kwargs)
         params = self.request.GET
         sessions = list(EmsSession.objects.all())
@@ -75,10 +85,16 @@ class CoordinatorDashboardView(CoordinatorRequiredMixin, TemplateView):
             date_to=params.get("to", ""),
             history=metrics.by_session(history_tasks)[:26],
             unallocated_count=unallocated_active_contacts().count(),
-            review_due=Contact.objects.filter(
-                status=ContactStatus.TEMP_UNAVAILABLE, review_date__lte=today
-            ).order_by("review_date"),
+            review_due=Contact.objects.filter(status=ContactStatus.ON_HOLD, review_date__lte=today).order_by(
+                "review_date"
+            ),
             rotation_due=rotation_due(),
+            status_counts=saints_by_status(),
+            on_leave=User.objects.filter(is_active=True, on_leave_since__isnull=False)
+            .annotate(
+                saints=Count("allocations", filter=Q(allocations__effective_to__isnull=True), distinct=True)
+            )
+            .filter(saints__gt=0),
         )
         if session:
             session_tasks = tasks.filter(session=session)
@@ -101,10 +117,37 @@ def month_bounds(value):
     return start, end
 
 
-def monthly_data(month_param):
-    start, end = month_bounds(month_param)
+PERIODS = [("week", "Weekly"), ("month", "Monthly"), ("3m", "3 Months")]
+
+
+def period_bounds(params):
+    """(period, start, end exclusive, title, file label) for the Weekly / Monthly / 3 Months buttons."""
+    period = params.get("period", "month")
+    today = timezone.localdate()
+    if period == "week":
+        sessions = EmsSession.objects.filter(session_date__lte=next_sunday(today)).order_by("-session_date")
+        chosen = parse_date(params.get("week"))
+        day = chosen or (sessions.values_list("session_date", flat=True).first() or next_sunday(today))
+        return period, day, day + timedelta(days=1), congregation_label(day), f"week-{day:%Y-%m-%d}"
+    if period == "3m":
+        end = next_sunday(today) + timedelta(days=1)
+        start = add_months(today, -3)
+        return period, start, end, "Last 3 months, week by week", f"3-months-{today:%Y-%m-%d}"
+    start, end = month_bounds(params.get("month", ""))
+    return "month", start, end, f"{start:%B %Y}", f"{start:%Y-%m}"
+
+
+def monthly_data(params):
+    period, start, end, title, file_label = period_bounds(params)
     tasks = CallTask.objects.filter(session__session_date__gte=start, session__session_date__lt=end)
     return {
+        "period": period,
+        "periods": PERIODS,
+        "title": title,
+        "file_label": file_label,
+        "week_choices": EmsSession.objects.filter(session_date__lte=next_sunday()).order_by("-session_date")[
+            :26
+        ],
         "month_start": start,
         "month_value": f"{start:%Y-%m}",
         "summary": metrics.summarize(tasks),
@@ -119,7 +162,11 @@ class MonthlyReportView(CoordinatorRequiredMixin, TemplateView):
     template_name = "reports/monthly.html"
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(**monthly_data(self.request.GET.get("month", "")), **kwargs)
+        context = super().get_context_data(**monthly_data(self.request.GET), **kwargs)
+        params = self.request.GET.copy()
+        params.pop("format", None)
+        context["querystring"] = params.urlencode()
+        return context
 
 
 METRIC_HEADERS = [metrics.METRIC_LABELS[f] for f in metrics.METRIC_FIELDS] + ["Completion %", "Connection %"]
@@ -146,12 +193,9 @@ class SessionExportView(CoordinatorRequiredMixin, View):
             rows = [[str(r["caller_obj"]), *metric_cells(r)] for r in metrics.by_caller(tasks)]
             rows.append(["TOTAL", *metric_cells(metrics.summarize(tasks))])
         elif kind == "tasks":
-            include_dnc = request.GET.get("include_dnc") == "1"
             qs = tasks.select_related("contact", "caller").order_by(
                 "caller__first_name", "contact__full_name"
             )
-            if not include_dnc:
-                qs = qs.exclude(contact__status=ContactStatus.DO_NOT_CALL)
             headers = [
                 "Contact",
                 "Area",
@@ -191,7 +235,7 @@ class SessionExportView(CoordinatorRequiredMixin, View):
 
 class MonthlyExportView(CoordinatorRequiredMixin, View):
     def get(self, request):
-        data = monthly_data(request.GET.get("month", ""))
+        data = monthly_data(request.GET)
         fmt = export_format(request)
         headers = ["Session", *METRIC_HEADERS]
         rows = [[str(r["session_obj"]), *metric_cells(r)] for r in data["by_session"]]
@@ -199,7 +243,7 @@ class MonthlyExportView(CoordinatorRequiredMixin, View):
         log_event(
             request.user,
             "export.monthly",
-            f"Exported monthly report {data['month_value']} ({fmt})",
+            f"Exported report {data['title']} ({fmt})",
             rows=len(rows),
         )
-        return export_response(fmt, f"ems-monthly-{data['month_value']}", headers, rows, "Monthly")
+        return export_response(fmt, f"ems-report-{data['file_label']}", headers, rows, "Report")

@@ -12,14 +12,14 @@ from django.urls import reverse
 
 from apps.allocations.services import allocated_contact_ids, callers_queryset
 from apps.calling.models import SessionStatus
-from apps.contacts.models import Contact, ContactStatus
+from apps.contacts.models import CALLABLE_STATUSES, Contact
 from apps.imports.models import BatchStatus, ImportBatch
 
 
 def build_overview(user, week_session):
-    active_saints = Contact.objects.filter(status=ContactStatus.ACTIVE).count()
+    active_saints = Contact.objects.filter(status__in=CALLABLE_STATUSES).count()
     caller_count = callers_queryset().count()
-    allocated = Contact.objects.filter(status=ContactStatus.ACTIVE, pk__in=allocated_contact_ids()).count()
+    allocated = Contact.objects.filter(status__in=CALLABLE_STATUSES, pk__in=allocated_contact_ids()).count()
     unallocated = active_saints - allocated
     staged_import = ImportBatch.objects.filter(status=BatchStatus.STAGED).order_by("-uploaded_at").first()
 

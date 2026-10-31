@@ -1,26 +1,42 @@
 {% extends "base.html" %}
 {% load ui %}
-{% block title %}Monthly report{% endblock %}
+{% block title %}Reports{% endblock %}
 {% block content %}
 <div class="ems-page-header">
   <div class="min-w-0">
-    <div class="ems-eyebrow mb-1">Monthly report</div>
-    <h1 class="ems-page-title">{{ month_start|date:"F Y" }}</h1>
+    <div class="ems-eyebrow mb-1">Reports</div>
+    <h1 class="ems-page-title">{{ title }}</h1>
     <p class="ems-page-subtitle">{{ session_count }} congregation{{ session_count|pluralize }} · {{ unique_yes }} different Saint{{ unique_yes|pluralize }} said Yes</p>
   </div>
-  <div class="ems-page-actions align-items-end">
-    <form method="get" class="d-flex gap-2 align-items-end">
-      <div><label class="form-label small mb-1" for="month">Month</label><input class="form-control" type="month" id="month" name="month" value="{{ month_value }}"></div>
-      <button class="btn btn-outline-secondary">Show</button>
-    </form>
+  <div class="ems-page-actions">
     <div class="dropdown">
       <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% icon "download" %}Export</button>
       <ul class="dropdown-menu dropdown-menu-end">
-        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Excel</a></li>
-        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?month={{ month_value }}&amp;format=csv">{% icon "filetype-csv" %}CSV</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?{{ querystring }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Excel</a></li>
+        <li><a class="dropdown-item" href="{% url 'reports:monthly_export' %}?{{ querystring }}&amp;format=csv">{% icon "filetype-csv" %}CSV</a></li>
       </ul>
     </div>
   </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+  <div class="btn-group" role="group" aria-label="Report period">
+    {% for value, label in periods %}<a class="btn {% if value == period %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?period={{ value }}"{% if value == period %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  {% if period == "month" %}
+  <form method="get" class="d-flex gap-2 align-items-end">
+    <input type="hidden" name="period" value="month">
+    <label class="visually-hidden" for="month">Month</label><input class="form-control" type="month" id="month" name="month" value="{{ month_value }}">
+    <button class="btn btn-outline-secondary">Show</button>
+  </form>
+  {% elif period == "week" and week_choices %}
+  <form method="get" class="d-flex gap-2 align-items-end">
+    <input type="hidden" name="period" value="week">
+    <label class="visually-hidden" for="week">Congregation</label>
+    <select class="form-select" id="week" name="week" onchange="this.form.submit()">{% for s in week_choices %}<option value="{{ s.session_date|date:'Y-m-d' }}"{% if s.session_date == month_start %} selected{% endif %}>{{ s.label }}</option>{% endfor %}</select>
+    <noscript><button class="btn btn-outline-secondary">Show</button></noscript>
+  </form>
+  {% endif %}
 </div>
 
 {% if summary.assigned %}
@@ -33,7 +49,7 @@
   </div>
 
   <section class="card mb-4" aria-labelledby="by-session-title">
-    <div class="ems-card-header"><h2 class="ems-section-title" id="by-session-title">By congregation</h2></div>
+    <div class="ems-card-header"><h2 class="ems-section-title" id="by-session-title">{% if period == "3m" %}Week by week{% else %}By congregation{% endif %}</h2></div>
     <div class="table-responsive">
       <table class="table table-sm table-hover table-metrics align-middle">
         <thead><tr><th>Congregation</th><th style="min-width:6rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
@@ -44,7 +60,7 @@
   </section>
 
   <section class="card mb-3" aria-labelledby="by-caller-title">
-    <div class="ems-card-header"><h2 class="ems-section-title" id="by-caller-title">By caller</h2><span class="small ems-muted">all congregations in {{ month_start|date:"F" }}</span></div>
+    <div class="ems-card-header"><h2 class="ems-section-title" id="by-caller-title">By caller</h2><span class="small ems-muted">all congregations in this report</span></div>
     <div class="table-responsive">
       <table class="table table-sm table-hover table-metrics align-middle">
         <thead><tr><th>Caller</th><th style="min-width:6rem">Completion</th>{% include "includes/metric_headers.html" %}</tr></thead>
@@ -52,9 +68,9 @@
       </table>
     </div>
   </section>
-  <p class="small ems-muted">Monthly totals add up each congregation; a Saint called for several congregations is counted once per congregation. Completed = at least one attempt. Will Try is never counted as Yes.</p>
+  <p class="small ems-muted">Totals add up each congregation; a Saint called for several congregations is counted once per congregation. Completed = at least one attempt. Will Try is never counted as Yes.</p>
 {% else %}
   {% url 'calling:session_list' as congregations_url %}
-  {% include "includes/ui/empty_state.html" with icon="bar-chart-line" title="No calling in this month" text="Choose another month above, or start calling for the coming Sunday." action_url=congregations_url action_label="EMS Congregations" only %}
+  {% include "includes/ui/empty_state.html" with icon="bar-chart-line" title="No calling in this period" text="Choose another period above, or start calling for the coming Sunday." action_url=congregations_url action_label="EMS Congregations" only %}
 {% endif %}
 {% endblock %}

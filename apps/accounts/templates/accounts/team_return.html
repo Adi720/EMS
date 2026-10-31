@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Back from leave{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'team:list' %}">Calling Team</a></li><li class="breadcrumb-item"><a href="{% url 'team:detail' member.pk %}">{{ member|display_name }}</a></li><li class="breadcrumb-item active" aria-current="page">Back from leave</li></ol></nav>
+<div class="row justify-content-center">
+  <div class="col-lg-8 col-xl-7">
+    {% include "includes/ui/page_header.html" with title="Back from leave" subtitle="Welcome back! Saints moved to other callers during the leave stay with them, unless you tick them below." only %}
+    <form method="post" class="card card-body">
+      {% csrf_token %}
+      {% if moved_away %}
+        <p class="small mb-2"><strong>{{ moved_away|length }}</strong> Saint{{ moved_away|pluralize }} moved to other callers while {{ member|display_name }} was away. Tick any that should come back:</p>
+        <div class="d-grid gap-1 mb-3">
+          {% for a in moved_away %}
+          <label class="form-check d-flex gap-2 align-items-center mb-0">
+            <input class="form-check-input mt-0" type="checkbox" name="move_back" value="{{ a.pk }}">
+            <span>{{ a.contact.full_name }} <span class="small ems-muted">· now with {{ a.caller }}</span></span>
+          </label>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="small ems-muted">None of their Saints were moved to other callers.</p>
+      {% endif %}
+      <div class="d-flex flex-wrap gap-2">
+        <button class="btn btn-primary" type="submit">{% icon "check-lg" %}Confirm they are back</button>
+        <a class="btn btn-outline-secondary" href="{% url 'team:detail' member.pk %}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

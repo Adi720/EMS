@@ -24,7 +24,7 @@ def data(make_contact, caller, caller2, allocate, make_session, record, coordina
     record(task, Outcome.YES, notes="See you Sunday", callback_at=None)
     change_status(
         contacts[1],
-        ContactStatus.TEMP_UNAVAILABLE,
+        ContactStatus.ON_HOLD,
         coordinator,
         reason_category=StatusReason.TEMPORARILY_AWAY,
         review_date=date(2026, 10, 1),

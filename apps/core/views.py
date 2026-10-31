@@ -11,6 +11,8 @@ def home(request):
         return redirect("core:coordinator_dashboard")
     if user.is_caller:
         return redirect("core:caller_dashboard")
+    if user.is_stall_lead:
+        return redirect("contacts:stall_add")
     return render(request, "core/no_role.html", status=403)
 
 

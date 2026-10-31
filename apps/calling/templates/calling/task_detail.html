@@ -17,12 +17,8 @@
     </div>
     {% include "includes/ui/outcome_badge.html" with task=task only %}
   </div>
-  {% if contact.is_do_not_call %}
-    <div class="alert alert-danger mt-3 mb-0">{% icon "slash-circle" %}<div class="alert-body">Do not call — this person asked not to be contacted.</div></div>
-  {% else %}
     <a class="btn btn-primary btn-lg w-100 mt-3 ems-call-btn" href="tel:{{ contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ contact.phone_display }}</a>
     {% if contact.phone_secondary %}<a class="btn btn-outline-secondary w-100 mt-2" href="tel:{{ contact.phone_secondary }}">{% icon "telephone" %}Alternate number {{ contact.phone_secondary_display }}</a>{% endif %}
-  {% endif %}
   {% if task.status == "withdrawn" %}<div class="alert alert-secondary mt-3 mb-0">{% icon "info-circle" %}<div class="alert-body">Withdrawn: {{ task.withdrawn_reason }}</div></div>{% endif %}
   {% if request.user.is_coordinator %}<a class="small d-inline-block mt-3" href="{% url 'contacts:detail' contact.pk %}">{% icon "person-vcard" %} Full Saint record</a>{% endif %}
 </section>
@@ -48,8 +44,8 @@
       </div>
       {% for e in form.outcome.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
     </fieldset>
-    <div class="mb-3"><label class="form-label" for="{{ form.notes.id_for_label }}">Note (optional)</label>{{ form.notes }}{% for e in form.notes.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
-    <div class="mb-3"><label class="form-label" for="{{ form.callback_at.id_for_label }}">Call back at (optional)</label>{{ form.callback_at }}{% for e in form.callback_at.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="mb-3"><label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>{{ form.notes }}{% for e in form.notes.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+    <div class="mb-3"><label class="form-label" for="{{ form.callback_at.id_for_label }}">{{ form.callback_at.label }}</label>{{ form.callback_at }}{% for e in form.callback_at.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
     <button class="btn btn-primary btn-lg w-100">{% icon "check-lg" %}Save result</button>
   </div>
 </form>
@@ -64,9 +60,9 @@
       {% for a in attempts %}
       <li class="ems-timeline__item">
         <div class="fw-semibold">{{ a.get_outcome_display }}{% if forloop.first %} <span class="badge text-bg-primary">Current</span>{% endif %}</div>
-        <div class="small ems-muted">{{ a.attempted_at|date:"D d M, H:i" }} · {{ a.recorded_by }}</div>
+        <div class="small ems-muted">{{ a.attempted_at|date:"D j M Y, H:i" }} · {{ a.recorded_by }}</div>
         {% if a.notes %}<div class="small">{{ a.notes|linebreaksbr }}</div>{% endif %}
-        {% if a.callback_at %}<div class="small text-warning-emphasis">{% icon "alarm" %} Call back {{ a.callback_at|date:"D d M, H:i" }}</div>{% endif %}
+        {% if a.callback_at %}<div class="small text-warning-emphasis">{% icon "alarm" %} Call back {{ a.callback_at|date:"D j M Y, H:i" }}</div>{% endif %}
       </li>
       {% empty %}<li class="small ems-muted">Not called yet.</li>
       {% endfor %}

@@ -30,7 +30,7 @@
   </div>
 </div>
 
-{% if session.status == "draft" %}<div class="alert alert-info">{% icon "info-circle" %}<div class="alert-body">Starting calling builds each caller's list: one call for every Active Saint assigned to them on {{ session.session_date|date:"d M Y" }}.</div></div>{% endif %}
+{% if session.status == "draft" %}<div class="alert alert-info">{% icon "info-circle" %}<div class="alert-body">Starting calling builds each caller's list: one call for every Active Saint assigned to them on {{ session.session_date|date:"j M Y" }}.</div></div>{% endif %}
 
 {% include "includes/metric_tiles.html" %}
 {% if summary.assigned %}<div class="card card-body mb-3">{% include "includes/ui/progress.html" with label="Calling completion" value=summary.completed total=summary.assigned unit="calls" size="lg" only %}</div>{% endif %}
@@ -98,7 +98,7 @@
           <td>{{ t.caller }}</td>
           <td>{% include "includes/ui/outcome_badge.html" with task=t only %}{% if t.status == "withdrawn" %} <span class="small">{{ t.withdrawn_reason }}</span>{% endif %}</td>
           <td class="text-end">{{ t.attempt_count }}</td>
-          <td>{{ t.last_attempt_at|date:"D d M H:i"|default:"—" }}</td>
+          <td>{{ t.last_attempt_at|date:"D j M Y, H:i"|default:"—" }}</td>
         </tr>
         {% empty %}<tr><td colspan="6" class="text-body-secondary">{% if session.status == "draft" %}Start calling to build the call lists.{% else %}No calls match.{% endif %}</td></tr>
         {% endfor %}

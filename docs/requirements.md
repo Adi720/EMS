@@ -391,3 +391,25 @@ Routine decisions taken during implementation. All are **[A]** unless marked; ch
 - The real import itself (questions B-1 and B-2 are resolved).
 - Deployment, backups and UAT (N-4); Docker and CI have not been executed.
 - Actual attendance, reminders and historical outcome import remain out of scope.
+
+## Changes after the seva team meeting (October 2026)
+
+These decisions replace the earlier rules above where they differ.
+
+- **Saint statuses:** New, Active, On Hold, Inactive (plus Delete for Saints added by mistake, only
+  without call results). *Temporarily unavailable* became **On Hold** (next call date, 6 months by
+  default); **Do Not Call was removed** — existing ones became Inactive. A Saint is **New** for 6
+  months after the stall date, is called like Active, and then becomes Active automatically.
+- **Skills** and **Sewa** fields on each Saint (free text, optional).
+- **Raise Request** (caller → coordinator): Saint unable to attend (approval makes the Saint
+  Inactive), wrong number, another caller, I need a break (approval marks the caller On Leave),
+  other. Coordinators see a count in the menu and an email if they have an address.
+- **Calling Team statuses:** Active, Partially Active (automatic: fewer than 75% of calls made over
+  the last month), On Leave (Saints moved to others; on return they stay unless ticked to move
+  back), Inactive. **Performance** page sorted best to worst.
+- **No Calling Sewa this week** switch; **Reports** with Weekly / Monthly / 3 Months; **My Report**
+  for callers; a once-a-day Sewa blessing message after login; dates shown as *1 Nov 2026*.
+- **Stall Lead** role with one shared login (`stall.sewa.admin`) that can only add Saints; the
+  name of the person adding is compulsory.
+- **Forgot password** by email reset link.
+- Not done yet (skipped for now): two-factor login, automated backups, the Sewa Bhav page.

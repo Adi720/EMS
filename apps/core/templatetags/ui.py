@@ -11,12 +11,17 @@ SECTIONS = {
     "core:coordinator_dashboard": "Dashboard",
     "core:caller_dashboard": "My calls",
     "contacts": "Saints",
-    "team": "Team",
+    "team": "Calling Team",
     "allocations": "Assignments",
     "calling": "EMS Congregations",
     "reports": "Reports",
     "imports": "Import",
     "audit": "Audit log",
+    "caller_requests": "Requests",
+    "caller_requests:mine": "Raise Request",
+    "team:performance": "Performance",
+    "core:my_report": "My Report",
+    "contacts:stall_add": "Add Saint",
     "accounts": "Account",
 }
 

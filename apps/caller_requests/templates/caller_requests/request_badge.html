@@ -1,0 +1,1 @@
+<span class="badge {% if item.status == 'approved' %}text-bg-success{% elif item.status == 'rejected' %}text-bg-secondary{% else %}text-bg-warning{% endif %}">{{ item.get_status_display }}</span>

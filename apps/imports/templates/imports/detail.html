@@ -8,7 +8,7 @@
 <div class="ems-page-header">
   <div class="min-w-0">
     <h1 class="ems-page-title">{% if batch.status == "committed" %}Import complete{% elif batch.is_staged %}Review the rows{% else %}Import cancelled{% endif %}</h1>
-    <p class="ems-page-subtitle">#{{ batch.pk }} · {{ batch.original_filename }} · uploaded {{ batch.uploaded_at|date:"d M Y, H:i" }} by {{ batch.uploaded_by }}</p>
+    <p class="ems-page-subtitle">#{{ batch.pk }} · {{ batch.original_filename }} · uploaded {{ batch.uploaded_at|date:"j M Y, H:i" }} by {{ batch.uploaded_by }}</p>
   </div>
   <div class="ems-page-actions">
     {% if batch.is_staged %}<a class="btn btn-outline-secondary" href="{% url 'imports:mapping' batch.pk %}">{% icon "arrow-left" %}Columns</a>{% endif %}
@@ -21,7 +21,7 @@
 {# ---- Success summary ---- #}
 <section class="ems-hero mb-4 border-success-subtle" aria-labelledby="done-title">
   <h2 class="ems-hero__title" id="done-title">{% icon "check-circle-fill" extra_class="text-ems-yes" %} {{ result.created }} Saint{{ result.created|pluralize }} imported</h2>
-  <p class="ems-hero__text">Imported {{ batch.committed_at|date:"d M Y, H:i" }} by {{ batch.committed_by }}. Callers are responsible from {{ result.effective_date }} ({{ batch.cycle }}).</p>
+  <p class="ems-hero__text">Imported {{ batch.committed_at|date:"j M Y, H:i" }} by {{ batch.committed_by }}. Callers are responsible from {{ result.effective_date }} ({{ batch.cycle }}).</p>
   <div class="row g-3 mt-1">
     <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Saints created" value=result.created icon="person-plus" tone="success" only %}</div>
     <div class="col-6 col-md-3">{% include "includes/ui/stat_card.html" with label="Already in the app" value=result.linked icon="link-45deg" tone="info" only %}</div>
@@ -32,7 +32,7 @@
   <h3 class="ems-eyebrow mt-4 mb-2">Saints per caller</h3>
   <div class="d-flex flex-wrap gap-2">{% for name, n in result.per_caller.items %}<span class="badge text-bg-primary fs-6 fw-semibold">{{ name }} · {{ n }}</span>{% endfor %}</div>
   {% endif %}
-  {% if result.unallocated %}<p class="small mt-3 mb-0">{{ result.unallocated }} Saint{{ result.unallocated|pluralize }} imported without a caller — <a href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">assign them</a>.</p>{% endif %}
+  {% if result.unallocated %}<p class="small mt-3 mb-0">{{ result.unallocated }} Saint{{ result.unallocated|pluralize }} imported without a caller — <a href="{% url 'allocations:change' %}?kind=assign&amp;caller=none">Assign Caller</a>.</p>{% endif %}
   {% if result.allocation_notes %}<details class="mt-3"><summary class="small">Saints already in the app with a different caller (not changed)</summary><ul class="small mt-2">{% for n in result.allocation_notes %}<li>{{ n }}</li>{% endfor %}</ul></details>{% endif %}
   <div class="d-flex flex-wrap gap-2 mt-3">
     <a class="btn btn-primary" href="{% url 'allocations:home' %}">{% icon "diagram-3" %}Check assignments</a>

@@ -11,14 +11,14 @@
       <h1 class="ems-page-title" id="saint-name">{{ contact.full_name }}</h1>
       <div class="d-flex flex-wrap align-items-center gap-2 mt-1 small ems-muted">
         {% include "contacts/status_badge.html" with status=contact.status label=contact.get_status_display %}
-        {% if contact.status_since %}<span>since {{ contact.status_since|date:"d M Y" }}</span>{% endif %}
-        {% if contact.review_date %}<span>· review {{ contact.review_date|date:"d M Y" }}</span>{% endif %}
+        {% if contact.status_since %}<span>since {{ contact.status_since|date:"j M Y" }}</span>{% endif %}
+        {% if contact.review_date %}<span>· next call {{ contact.review_date|date:"j M Y" }}</span>{% endif %}
         <span>· {% icon "geo-alt" %} {{ contact.area }}</span>
         <span>· {% icon "headset" %} {{ current.caller|default:"No caller" }}</span>
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2">
-      {% if not contact.is_do_not_call %}<a class="btn btn-outline-secondary" href="tel:{{ contact.phone_primary }}">{% icon "telephone" %}{{ contact.phone_display }}</a>{% endif %}
+      <a class="btn btn-outline-secondary" href="tel:{{ contact.phone_primary }}">{% icon "telephone" %}{{ contact.phone_display }}</a>
       <a class="btn btn-primary" href="{% url 'contacts:edit' contact.pk %}">{% icon "pencil" %}Edit details</a>
       <a class="btn btn-outline-danger" href="{% url 'contacts:delete' %}?ids={{ contact.pk }}">{% icon "trash" %}Delete</a>
     </div>
@@ -36,11 +36,13 @@
       <div class="ems-card-header"><h2 class="ems-section-title" id="details-title">Details</h2></div>
       <div class="card-body">
         <dl class="row g-3 mb-0 ems-facts">
-          <div class="col-sm-6"><dt>Mobile</dt><dd>{% if contact.is_do_not_call %}<span class="ems-muted">Hidden from callers</span> · {% endif %}<a href="tel:{{ contact.phone_primary }}">{{ contact.phone_display }}</a></dd></div>
+          <div class="col-sm-6"><dt>Mobile</dt><dd><a href="tel:{{ contact.phone_primary }}">{{ contact.phone_display }}</a></dd></div>
           {% if contact.phone_secondary %}<div class="col-sm-6"><dt>Secondary mobile</dt><dd><a href="tel:{{ contact.phone_secondary }}">{{ contact.phone_secondary_display }}</a></dd></div>{% endif %}
           <div class="col-sm-6"><dt>Area</dt><dd>{{ contact.area }}</dd></div>
-          <div class="col-sm-6"><dt>Registered at stall</dt><dd>{{ contact.registration_date|date:"d M Y" }}</dd></div>
+          <div class="col-sm-6"><dt>Registered at stall</dt><dd>{{ contact.registration_date|date:"j M Y" }}</dd></div>
           {% if contact.qualification %}<div class="col-sm-6"><dt>Qualification</dt><dd>{{ contact.qualification }}</dd></div>{% endif %}
+          {% if contact.skills %}<div class="col-sm-6"><dt>Skills</dt><dd>{{ contact.skills }}</dd></div>{% endif %}
+          {% if contact.sewa %}<div class="col-sm-6"><dt>Sewa</dt><dd>{{ contact.sewa }}</dd></div>{% endif %}
           {% if contact.collected_by_name %}<div class="col-sm-6"><dt>Collected by</dt><dd>{{ contact.collected_by_name }}</dd></div>{% endif %}
           {% if contact.legacy_data.import %}<div class="col-sm-6"><dt>Imported</dt><dd><a href="{% url 'imports:detail' contact.legacy_data.import.batch %}">Import #{{ contact.legacy_data.import.batch }}</a>, row {{ contact.legacy_data.import.row }}</dd></div>{% endif %}
           {% if contact.notes %}<div class="col-12"><dt>Notes</dt><dd>{{ contact.notes|linebreaksbr }}</dd></div>{% endif %}
@@ -66,7 +68,7 @@
                 <span>{% if t.status == "withdrawn" %}<span class="badge text-bg-secondary">Withdrawn</span>{% elif t.latest_outcome == "yes" %}<span class="badge text-bg-success">Yes</span>{% elif t.latest_outcome == "not_possible" %}<span class="badge text-bg-danger">Not Possible</span>{% elif t.latest_outcome == "will_try" %}<span class="badge text-bg-info">Will Try</span>{% elif t.latest_outcome %}<span class="badge text-bg-secondary">{{ t.get_latest_outcome_display }}</span>{% else %}<span class="badge text-bg-warning">Not attempted</span>{% endif %}</span>
               </div>
               <div class="small ems-muted">Caller {{ t.caller }}{% if t.status == "withdrawn" %} · {{ t.withdrawn_reason }}{% endif %}</div>
-              {% for a in t.attempts.all %}<div class="small">{{ a.attempted_at|date:"D d M, H:i" }} · {{ a.get_outcome_display }}{% if a.notes %} — {{ a.notes }}{% endif %}</div>{% endfor %}
+              {% for a in t.attempts.all %}<div class="small">{{ a.attempted_at|date:"D j M Y, H:i" }} · {{ a.get_outcome_display }}{% if a.notes %} — {{ a.notes }}{% endif %}</div>{% endfor %}
             </li>
             {% empty %}<li class="ems-muted small">No calls yet. Calls appear here once calling starts for a congregation.</li>
             {% endfor %}
@@ -77,7 +79,7 @@
             {% for a in allocations %}
             <li class="ems-timeline__item">
               <div class="fw-semibold">{{ a.caller }}</div>
-              <div class="small ems-muted">{{ a.effective_from|date:"d M Y" }} → {% if a.effective_to %}{{ a.last_day|date:"d M Y" }}{% else %}now{% endif %} · {{ a.get_change_type_display }}{% if a.cycle %} · {{ a.cycle }}{% endif %} · by {{ a.created_by|default:"system" }}</div>
+              <div class="small ems-muted">{{ a.effective_from|date:"j M Y" }} → {% if a.effective_to %}{{ a.last_day|date:"j M Y" }}{% else %}now{% endif %} · {{ a.get_change_type_display }}{% if a.cycle %} · {{ a.cycle }}{% endif %} · by {{ a.created_by|default:"system" }}</div>
               {% if a.reason %}<div class="small">{{ a.reason }}</div>{% endif %}
             </li>
             {% empty %}<li class="ems-muted small">Never had a caller.</li>
@@ -89,7 +91,7 @@
             {% for h in history %}
             <li class="ems-timeline__item">
               <div class="fw-semibold">{% if h.from_status %}{{ h.get_from_status_display }} → {% endif %}{{ h.get_to_status_display }}</div>
-              <div class="small ems-muted">{{ h.effective_date|date:"d M Y" }} · {{ h.get_reason_category_display }} · by {{ h.changed_by|default:"system" }}</div>
+              <div class="small ems-muted">{{ h.effective_date|date:"j M Y" }} · {{ h.get_reason_category_display }} · by {{ h.changed_by|default:"system" }}</div>
               {% if h.reason_text %}<div class="small">{{ h.reason_text }}</div>{% endif %}
             </li>
             {% endfor %}
@@ -106,12 +108,12 @@
         <div class="d-flex align-items-center gap-2 mb-3">
           {% if current %}
             <span class="ems-avatar" aria-hidden="true">{{ current.caller|initials }}</span>
-            <div><div class="fw-semibold">{{ current.caller }}</div><div class="small ems-muted">since {{ current.effective_from|date:"d M Y" }}</div></div>
+            <div><div class="fw-semibold">{{ current.caller }}</div><div class="small ems-muted">since {{ current.effective_from|date:"j M Y" }}</div></div>
           {% else %}
             <span class="badge text-bg-warning">No caller</span>
           {% endif %}
         </div>
-        {% if contact.status != "do_not_call" and contact.status != "inactive" %}
+        {% if contact.status != "inactive" %}
         <form method="post" action="{% url 'contacts:reassign' contact.pk %}" novalidate>
           {% csrf_token %}
           {% with form=reassign_form %}
@@ -134,7 +136,7 @@
           {% include "includes/form_fields.html" with form=status_form %}
           <button class="btn btn-outline-secondary w-100">{% icon "toggle-on" %}Change status</button>
         </form>
-        <p class="small ems-muted mt-3 mb-0">Inactive and Do not call end the caller assignment and withdraw calls not yet made. Calls already made and all history are kept.</p>
+        <p class="small ems-muted mt-3 mb-0">New and Active Saints are called every week; New becomes Active by itself 6 months after registration. On Hold pauses calls until the next call date and keeps the caller. Inactive ends the caller assignment. Calls already made and all history are kept.</p>
       </div>
     </section>
   </div>

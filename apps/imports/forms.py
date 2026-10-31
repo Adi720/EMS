@@ -5,8 +5,8 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.allocations.models import AllocationCycle, CycleStatus
-from apps.allocations.services import add_months
 from apps.contacts.models import Contact
+from apps.core.dates import add_months
 from apps.core.forms import BootstrapFormMixin, DateInput
 
 from . import parsing

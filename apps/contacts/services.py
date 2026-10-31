@@ -5,13 +5,17 @@ append-only ``ContactStatusChange`` row, closes or keeps the caller allocation,
 and resynchronises call tasks in open sessions.
 """
 
+from datetime import date
+
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import log_event
+from apps.core.dates import add_months
 
-from .models import Contact, ContactStatus, ContactStatusChange, StatusReason
+from .models import CALLABLE_STATUSES, Contact, ContactStatus, ContactStatusChange, StatusReason
 
 EDITABLE_FIELDS = [
     "full_name",
@@ -21,11 +25,31 @@ EDITABLE_FIELDS = [
     "registration_date",
     "qualification",
     "collected_by_name",
+    "skills",
+    "sewa",
     "notes",
 ]
 
-# Statuses that end the caller allocation (A-5). Temporarily unavailable keeps it.
-ENDS_ALLOCATION = {ContactStatus.INACTIVE, ContactStatus.DO_NOT_CALL}
+# Statuses that end the caller allocation (A-5). On Hold keeps it.
+ENDS_ALLOCATION = {ContactStatus.INACTIVE}
+
+
+def new_period_start(today=None):
+    """Saints registered after this date are still New."""
+    return add_months(today or timezone.localdate(), -settings.NEW_PERIOD_MONTHS)
+
+
+def initial_status(registration_date, today=None):
+    """New for the first NEW_PERIOD_MONTHS after meeting them at the stall, then Active."""
+    if isinstance(registration_date, str):
+        registration_date = date.fromisoformat(registration_date[:10])
+    if registration_date and registration_date > new_period_start(today):
+        return ContactStatus.NEW
+    return ContactStatus.ACTIVE
+
+
+def default_hold_until(today=None):
+    return add_months(today or timezone.localdate(), settings.ON_HOLD_MONTHS)
 
 
 class LifecycleError(Exception):
@@ -47,7 +71,7 @@ def find_possible_duplicates(phones, exclude_pk=None):
 def create_contact(data, actor, *, reason=StatusReason.CREATED, reason_text="", legacy_data=None):
     contact = Contact(
         **{field: data.get(field, "") for field in EDITABLE_FIELDS},
-        status=ContactStatus.ACTIVE,
+        status=initial_status(data.get("registration_date")),
         status_since=timezone.localdate(),
         legacy_data=legacy_data or {},
         created_by=actor,
@@ -58,13 +82,14 @@ def create_contact(data, actor, *, reason=StatusReason.CREATED, reason_text="", 
     ContactStatusChange.objects.create(
         contact=contact,
         from_status="",
-        to_status=ContactStatus.ACTIVE,
+        to_status=contact.status,
         reason_category=reason,
         reason_text=reason_text,
         effective_date=contact.status_since,
         changed_by=actor,
     )
-    log_event(actor, "contact.create", f"Created contact {contact}", contact)
+    details = {"added_by": contact.collected_by_name} if contact.collected_by_name else {}
+    log_event(actor, "contact.create", f"Created contact {contact}", contact, **details)
     return contact
 
 
@@ -106,11 +131,9 @@ def change_status(
         raise LifecycleError("Unknown status.")
     if new_status == old_status:
         raise LifecycleError(f"Contact is already {contact.get_status_display()}.")
-    if old_status == ContactStatus.DO_NOT_CALL and not reason_text.strip():
-        raise LifecycleError(
-            "Leaving Do not call requires a note confirming the person agreed to be contacted again."
-        )
-    if new_status != ContactStatus.TEMP_UNAVAILABLE:
+    if new_status == ContactStatus.ON_HOLD:
+        review_date = review_date or default_hold_until(effective_date)
+    else:
         review_date = None
 
     ContactStatusChange.objects.create(
@@ -136,7 +159,7 @@ def change_status(
             actor=actor,
             reason=f"Status: {contact.get_status_display()}",
         )
-    elif new_status == ContactStatus.ACTIVE and reactivation_caller is not None:
+    elif new_status in CALLABLE_STATUSES and reactivation_caller is not None:
         if allocation_services.current_allocation(contact) is None:
             allocation_services.assign_individual(
                 contact,
@@ -162,9 +185,36 @@ def change_status(
     return contact
 
 
+@transaction.atomic
+def promote_new_saints(today=None):
+    """New Saints whose registration date is NEW_PERIOD_MONTHS ago become Active.
+    Safe to call often (dashboard, Saints list, starting calling, the daily job)."""
+    today = today or timezone.localdate()
+    due = list(
+        Contact.objects.select_for_update().filter(
+            status=ContactStatus.NEW, registration_date__lte=new_period_start(today)
+        )
+    )
+    for contact in due:
+        ContactStatusChange.objects.create(
+            contact=contact,
+            from_status=ContactStatus.NEW,
+            to_status=ContactStatus.ACTIVE,
+            reason_category=StatusReason.NEW_PERIOD_ENDED,
+            reason_text=f"{settings.NEW_PERIOD_MONTHS} months since registration",
+            effective_date=today,
+        )
+    if due:
+        Contact.objects.filter(pk__in=[c.pk for c in due]).update(
+            status=ContactStatus.ACTIVE, status_since=today
+        )
+        log_event(None, "contact.new_period_ended", f"{len(due)} New Saint(s) are now Active", count=len(due))
+    return len(due)
+
+
 def deletable(contacts):
     """Split contacts into (can delete, kept). A Saint with recorded call results is kept so
-    past congregation reports stay correct; mark them Inactive or Do not call instead."""
+    past congregation reports stay correct; mark them Inactive instead."""
     from apps.calling.models import CallAttempt
 
     with_calls = set(
@@ -190,7 +240,7 @@ def delete_contacts(contacts, actor, reason=""):
         raise LifecycleError(
             "These Saints have call results and cannot be deleted: "
             + ", ".join(c.full_name for c in kept)
-            + ". Change their status to Inactive or Do not call instead."
+            + ". Change their status to Inactive instead."
         )
     ids = [c.pk for c in can]
     # Bulk deletes on purpose: the history models refuse instance.delete() in normal use.

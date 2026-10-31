@@ -91,7 +91,7 @@ def test_add_caller_uses_in_app_team_management(client, coordinator):
 def test_navigation_by_role(client, caller, coordinator):
     client.force_login(coordinator)
     content = client.get(DASHBOARD).content.decode()
-    assert ">Saints<" in content and ">Team<" in content and ">Assignments<" in content
+    assert ">Saints<" in content and ">Calling Team<" in content and ">Assignments<" in content
     assert 'class="ems-nav__link active" href="/coordinator/" aria-current="page"' in content
 
     client.force_login(caller)
@@ -124,6 +124,6 @@ def test_ui_helpers(make_user):
 def test_week_label_is_coming_sunday(coord_client):
     sunday = next_sunday()
     assert coord_client.get(DASHBOARD).context["week_label"] == (
-        f"EMS Congregation ({sunday.day}/{sunday.month}/{sunday:%y})"
+        f"EMS Congregation ({sunday.day} {sunday:%b %Y})"
     )
     assert sunday.weekday() == 6 and sunday >= date.today()

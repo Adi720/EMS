@@ -4,7 +4,15 @@ import pytest
 from django.urls import NoReverseMatch, URLResolver, get_resolver, reverse
 
 # Views that are intentionally reachable without logging in.
-PUBLIC_URL_NAMES = {"accounts:login", "core:healthz"}
+# Forgot-password pages must work before logging in (Django marks them login_not_required).
+PUBLIC_URL_NAMES = {
+    "accounts:login",
+    "core:healthz",
+    "accounts:password_reset",
+    "accounts:password_reset_done",
+    "accounts:password_reset_confirm",
+    "accounts:password_reset_complete",
+}
 
 # Expected status per role for each role-restricted page.
 ROLE_MATRIX = {

@@ -59,5 +59,9 @@
     Array.prototype.forEach.call(boxes, function (box) { box.checked = all.checked; });
   });
 
+  // Modals marked data-show-on-load open by themselves (the daily Sewa blessing).
+  var autoModal = document.querySelector("[data-show-on-load]");
+  if (autoModal && window.bootstrap) { window.bootstrap.Modal.getOrCreateInstance(autoModal).show(); }
+
   paintThemeButtons();
 })();

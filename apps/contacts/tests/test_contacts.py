@@ -114,7 +114,7 @@ def test_list_search_filters_and_paginates(coord_client, make_contact, caller, a
 # --- Lifecycle -------------------------------------------------------------------
 
 
-def test_temporarily_unavailable_keeps_allocation_and_withdraws_unattempted(
+def test_on_hold_keeps_allocation_and_withdraws_unattempted(
     make_contact, caller, allocate, make_session, coordinator
 ):
     contact = make_contact()
@@ -122,7 +122,7 @@ def test_temporarily_unavailable_keeps_allocation_and_withdraws_unattempted(
     session = make_session()
     change_status(
         contact,
-        ContactStatus.TEMP_UNAVAILABLE,
+        ContactStatus.ON_HOLD,
         coordinator,
         reason_category=StatusReason.TEMPORARILY_AWAY,
         review_date=date(2026, 12, 1),
@@ -137,10 +137,8 @@ def test_temporarily_unavailable_keeps_allocation_and_withdraws_unattempted(
     assert task.status == TaskStatus.OPEN and task.caller == caller
 
 
-@pytest.mark.parametrize("status", [ContactStatus.INACTIVE, ContactStatus.DO_NOT_CALL])
-def test_inactive_and_do_not_call_end_allocation_keep_history(
-    make_contact, caller, allocate, coordinator, status
-):
+@pytest.mark.parametrize("status", [ContactStatus.INACTIVE])
+def test_inactive_ends_allocation_keeps_history(make_contact, caller, allocate, coordinator, status):
     contact = make_contact()
     allocation = allocate(contact, caller).opened.get()
     change_status(
@@ -164,15 +162,11 @@ def test_inactive_and_do_not_call_end_allocation_keep_history(
     assert history.changed_by == coordinator
 
 
-def test_leaving_do_not_call_requires_consent_note(make_contact, coordinator, caller):
+def test_reactivating_can_assign_a_caller(make_contact, coordinator, caller):
     contact = make_contact()
     change_status(
-        contact, ContactStatus.DO_NOT_CALL, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
+        contact, ContactStatus.INACTIVE, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
     )
-    with pytest.raises(LifecycleError):
-        change_status(
-            contact, ContactStatus.ACTIVE, coordinator, reason_category=StatusReason.AVAILABLE_AGAIN
-        )
     change_status(
         contact,
         ContactStatus.ACTIVE,
@@ -195,13 +189,13 @@ def test_status_view_and_validation(coord_client, make_contact):
     response = coord_client.post(
         url,
         {
-            "new_status": "inactive",
-            "reason_category": "moved_away",
+            "new_status": "on_hold",
+            "reason_category": "temporarily_away",
             "effective_date": "2026-06-01",
-            "review_date": "2026-07-01",
+            "review_date": "2026-05-01",
         },
     )
-    assert response.status_code == 200  # review date only for temporarily unavailable
+    assert response.status_code == 200  # next call date before the effective date
     contact.refresh_from_db()
     assert contact.status == ContactStatus.ACTIVE
     response = coord_client.post(
@@ -228,19 +222,15 @@ def test_history_is_append_only_and_contacts_cannot_be_deleted(make_contact):
 # --- Export ------------------------------------------------------------------------
 
 
-def test_export_excludes_do_not_call_and_neutralises_formulas(coord_client, make_contact, coordinator):
+def test_export_neutralises_formulas_and_includes_skills(coord_client, make_contact, coordinator):
     make_contact(full_name='=HYPERLINK("http://evil.example","x")')
-    dnc = make_contact(full_name="Private Person")
-    change_status(
-        dnc, ContactStatus.DO_NOT_CALL, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
-    )
+    make_contact(full_name="Private Person", skills="Teaching", sewa="Langar")
 
     response = coord_client.get(reverse("contacts:export"), {"format": "csv"})
     body = response.content.decode("utf-8-sig")
-    assert "Private Person" not in body
-    assert "'=HYPERLINK" in body
+    assert "'=HYPERLINK" in body and "Teaching" in body and "Langar" in body
 
-    response = coord_client.get(reverse("contacts:export"), {"format": "xlsx", "include_dnc": "1"})
+    response = coord_client.get(reverse("contacts:export"), {"format": "xlsx"})
     sheet = load_workbook(io.BytesIO(response.content)).active
     names = [row[0].value for row in sheet.iter_rows(min_row=2)]
     assert "Private Person" in names

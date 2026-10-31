@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.calling.reminders import send_weekly_reminders
 from apps.calling.services import CallingError
+from apps.contacts.services import promote_new_saints
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -22,6 +23,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, force, date: str | None = None, **options):
         today = self._today(date)
+        promoted = promote_new_saints(today)
+        if promoted:
+            self.stdout.write(f"{promoted} New Saint(s) are now Active.")
         if today.weekday() != settings.REMINDER_WEEKDAY and not force:
             self.stdout.write(f"Today is not {DAYS[settings.REMINDER_WEEKDAY]}; nothing to do.")
             return
@@ -30,6 +34,9 @@ class Command(BaseCommand):
         except CallingError as exc:
             raise CommandError(str(exc)) from exc
         session = result["session"]
+        if result.get("held"):
+            self.stdout.write(f"No Calling Sewa for {result['held'].label}; no reminders sent.")
+            return
         if session is None:
             self.stdout.write("Calling has not been started for this Sunday; no reminders sent.")
             return

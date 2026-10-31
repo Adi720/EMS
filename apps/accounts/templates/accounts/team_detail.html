@@ -2,7 +2,7 @@
 {% load ui %}
 {% block title %}{{ member|display_name }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'team:list' %}">Team</a></li><li class="breadcrumb-item active" aria-current="page">{{ member|display_name }}</li></ol></nav>
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'team:list' %}">Calling Team</a></li><li class="breadcrumb-item active" aria-current="page">{{ member|display_name }}</li></ol></nav>
 
 <div class="ems-page-header">
   <div class="d-flex align-items-center gap-3 min-w-0">
@@ -10,7 +10,7 @@
     <div class="min-w-0">
       <h1 class="ems-page-title text-truncate">{{ member|display_name }}</h1>
       <p class="ems-page-subtitle">{{ member.username }}{% if member.email %} · {{ member.email }}{% else %} · no email (no Saturday reminder){% endif %}
-        · {% if member.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Deactivated</span>{% endif %}</p>
+        · {% include "accounts/team_status_badge.html" with status=status only %}{% if perf %} · {{ perf.completion_rate }}% of calls attempted in the last month{% endif %}</p>
     </div>
   </div>
   {% if manageable %}
@@ -34,7 +34,7 @@
         <table class="table table-hover">
           <thead><tr><th>Saint</th><th>Area</th><th>Since</th></tr></thead>
           <tbody>
-            {% for a in saints %}<tr><td><a href="{% url 'contacts:detail' a.contact.pk %}">{{ a.contact.full_name }}</a></td><td>{{ a.contact.area }}</td><td class="ems-num">{{ a.effective_from|date:"d M Y" }}</td></tr>{% endfor %}
+            {% for a in saints %}<tr><td><a href="{% url 'contacts:detail' a.contact.pk %}">{{ a.contact.full_name }}</a></td><td>{{ a.contact.area }}</td><td class="ems-num">{{ a.effective_from|date:"j M Y" }}</td></tr>{% endfor %}
           </tbody>
         </table>
       </div>
@@ -44,6 +44,25 @@
     </section>
   </div>
   <div class="col-lg-5">
+    {% if member.is_active %}
+    <section class="card mb-4" aria-labelledby="leave-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="leave-title">{% icon "cup-hot" %} On Leave</h2></div>
+      <div class="card-body">
+        {% if member.is_on_leave %}
+          <p class="small mb-2">On Leave since <strong>{{ member.on_leave_since|date:"j M Y" }}</strong>.{% if saints %} They still have {{ saints|length }} Saint{{ saints|pluralize }} — <a href="{% url 'allocations:change' %}?kind=move_all&amp;from_caller={{ member.pk }}">give them to another caller</a>.{% endif %}</p>
+          <a class="btn btn-outline-primary w-100" href="{% url 'team:return' member.pk %}">{% icon "arrow-return-left" %}Back from leave</a>
+        {% else %}
+          <form method="post" action="{% url 'team:leave' member.pk %}" onsubmit="return confirm('Mark {{ member|display_name|escapejs }} as On Leave?');">
+            {% csrf_token %}
+            <label class="form-label small" for="leave-reason">Reason (optional)</label>
+            <input class="form-control mb-2" id="leave-reason" name="reason" maxlength="300" placeholder="e.g. travelling for 2 months">
+            <button class="btn btn-outline-secondary w-100">{% icon "cup-hot" %}Mark On Leave</button>
+          </form>
+          <p class="small ems-muted mt-2 mb-0">You will then be asked to give their Saints to another caller.</p>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
     {% if week %}
     <section class="card mb-4">
       <div class="ems-card-header"><h2 class="ems-section-title">{{ week.session }}</h2></div>
@@ -56,7 +75,7 @@
         {% for a in attempts %}
         <li class="list-group-item d-flex justify-content-between gap-2">
           <span class="min-w-0 text-truncate">{{ a.task.contact.full_name }} · {{ a.get_outcome_display }}</span>
-          <span class="ems-muted text-nowrap">{{ a.attempted_at|date:"d M H:i" }}</span>
+          <span class="ems-muted text-nowrap">{{ a.attempted_at|date:"j M Y, H:i" }}</span>
         </li>
         {% empty %}<li class="list-group-item ems-muted">No calls recorded yet.</li>
         {% endfor %}

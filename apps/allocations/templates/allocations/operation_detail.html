@@ -6,7 +6,7 @@
 <div class="ems-page-header">
   <div class="min-w-0">
     <h1 class="ems-page-title">{{ operation.get_kind_display }}</h1>
-    <p class="ems-page-subtitle">{{ moves|length }} Saint{{ moves|length|pluralize }} · from {{ operation.effective_date|date:"d M Y" }} · by {{ operation.performed_by|default:"system" }} on {{ operation.performed_at|date:"d M Y, H:i" }}</p>
+    <p class="ems-page-subtitle">{{ moves|length }} Saint{{ moves|length|pluralize }} · from {{ operation.effective_date|date:"j M Y" }} · by {{ operation.performed_by|default:"system" }} on {{ operation.performed_at|date:"j M Y, H:i" }}</p>
   </div>
 </div>
 <div class="row g-4">

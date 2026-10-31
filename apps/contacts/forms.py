@@ -6,8 +6,8 @@ from apps.core.forms import BootstrapFormMixin, DateInput
 from apps.core.phones import normalize_phone
 from apps.core.text import clean_text
 
-from .models import Contact, ContactStatus, StatusReason
-from .services import find_possible_duplicates
+from .models import CALLABLE_STATUSES, Contact, ContactStatus, StatusReason
+from .services import default_hold_until, find_possible_duplicates
 
 PHONE_ERROR = "Enter a valid mobile number (10 digits, or with country code such as +91)."
 
@@ -27,19 +27,28 @@ class ContactForm(BootstrapFormMixin, forms.ModelForm):
             "area",
             "registration_date",
             "qualification",
+            "skills",
+            "sewa",
             "collected_by_name",
             "notes",
         ]
         widgets = {
             "registration_date": DateInput(),
             "notes": forms.Textarea(attrs={"rows": 3}),
+            "skills": forms.TextInput(attrs={"placeholder": "e.g. teaching, computers, cooking"}),
+            "sewa": forms.TextInput(attrs={"placeholder": "Sewa they do or would like to do"}),
             "phone_primary": forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "off"}),
             "phone_secondary": forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "off"}),
         }
+        labels = {"phone_primary": "Mobile number", "phone_secondary": "Second mobile number"}
+        help_texts = {"phone_primary": "10 digits, or with the country code (+91…)."}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.duplicates = []
+        # The "different person" box only appears once a possible duplicate is found.
+        if not self.data.get("confirm_duplicate"):
+            self.fields["confirm_duplicate"].widget = forms.HiddenInput()
         if self.instance.pk:
             self.initial["phone_primary"] = self.instance.phone_display
             self.initial["phone_secondary"] = self.instance.phone_secondary_display
@@ -83,6 +92,8 @@ class ContactForm(BootstrapFormMixin, forms.ModelForm):
             self.duplicates = list(
                 find_possible_duplicates([primary, secondary], exclude_pk=self.instance.pk)
             )
+            if self.duplicates:
+                self.fields["confirm_duplicate"].widget = forms.CheckboxInput()
             if self.duplicates and not cleaned.get("confirm_duplicate"):
                 raise forms.ValidationError(
                     "Another contact already uses this phone number. Check the list below; "
@@ -92,6 +103,42 @@ class ContactForm(BootstrapFormMixin, forms.ModelForm):
 
     def contact_data(self):
         return {field: self.cleaned_data[field] for field in self.Meta.fields}
+
+
+class StallSaintForm(ContactForm):
+    """New Saint from the stall. No caller or start date: coordinators decide those."""
+
+    class Meta(ContactForm.Meta):
+        fields = [
+            "full_name",
+            "phone_primary",
+            "phone_secondary",
+            "area",
+            "registration_date",
+            "qualification",
+            "skills",
+            "sewa",
+            "notes",
+            "collected_by_name",
+        ]
+        labels = {
+            **ContactForm.Meta.labels,
+            "collected_by_name": "Your name",
+            "registration_date": "Date met at the stall",
+        }
+        help_texts = {
+            **ContactForm.Meta.help_texts,
+            "collected_by_name": "The stall seva member adding this Saint.",
+            "registration_date": "",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["collected_by_name"].required = True
+        self.initial.setdefault("registration_date", timezone.localdate())
+
+    def clean_collected_by_name(self):
+        return clean_text(self.cleaned_data["collected_by_name"])
 
 
 class StatusChangeForm(BootstrapFormMixin, forms.Form):
@@ -107,7 +154,10 @@ class StatusChangeForm(BootstrapFormMixin, forms.Form):
     )
     effective_date = forms.DateField(label="Effective date", widget=DateInput())
     review_date = forms.DateField(
-        label="Review date (temporarily unavailable only)", required=False, widget=DateInput()
+        label="Next call date (On Hold only)",
+        required=False,
+        widget=DateInput(),
+        help_text="Filled in as 6 months ahead if left empty.",
     )
     reactivation_caller = forms.ModelChoiceField(
         label="Allocate to caller (when reactivating an unallocated contact)",
@@ -121,19 +171,18 @@ class StatusChangeForm(BootstrapFormMixin, forms.Form):
         self.fields["new_status"].choices = [c for c in ContactStatus.choices if c[0] != contact.status]
         self.fields["reactivation_caller"].queryset = callers
         self.initial.setdefault("effective_date", timezone.localdate())
+        self.initial.setdefault("review_date", default_hold_until())
 
     def clean(self):
         cleaned = super().clean()
         new_status = cleaned.get("new_status")
         effective = cleaned.get("effective_date")
         review = cleaned.get("review_date")
-        if review and new_status != ContactStatus.TEMP_UNAVAILABLE:
-            self.add_error("review_date", "Only used for temporarily unavailable contacts.")
-        if review and effective and review < effective:
-            self.add_error("review_date", "Review date must be on or after the effective date.")
-        if self.contact.status == ContactStatus.DO_NOT_CALL and not cleaned.get("reason_text", "").strip():
-            self.add_error("reason_text", "Required: confirm that the person agreed to be contacted again.")
-        if cleaned.get("reactivation_caller") and new_status != ContactStatus.ACTIVE:
+        if new_status != ContactStatus.ON_HOLD:
+            cleaned["review_date"] = None  # only On Hold has a next call date
+        elif review and effective and review < effective:
+            self.add_error("review_date", "The next call date must be on or after the effective date.")
+        if cleaned.get("reactivation_caller") and new_status not in CALLABLE_STATUSES:
             self.add_error("reactivation_caller", "Only used when reactivating.")
         return cleaned
 

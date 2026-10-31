@@ -1,0 +1,1 @@
+<span class="badge {% if status == 'active' %}text-bg-success{% elif status == 'partially_active' %}text-bg-warning{% elif status == 'on_leave' %}text-bg-info{% else %}text-bg-secondary{% endif %}">{% if status == 'active' %}Active{% elif status == 'partially_active' %}Partially Active{% elif status == 'on_leave' %}On Leave{% else %}Inactive{% endif %}</span>

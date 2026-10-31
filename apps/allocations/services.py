@@ -6,10 +6,9 @@ the contacts, re-checks that nothing changed since the preview, closes the
 current allocation on the effective date and opens the new one.
 """
 
-import calendar
 import hashlib
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -19,7 +18,8 @@ from django.utils import timezone
 from apps.accounts.models import User
 from apps.accounts.roles import Role
 from apps.audit.services import log_event
-from apps.contacts.models import Contact, ContactStatus
+from apps.contacts.models import CALLABLE_STATUSES, Contact, ContactStatus
+from apps.core.dates import add_months
 
 from .models import Allocation, AllocationCycle, AllocationOperation, ChangeType, CycleStatus
 
@@ -29,7 +29,7 @@ class AllocationError(Exception):
 
 
 # These statuses end the allocation (requirements §6); they must be reactivated first.
-CANNOT_ALLOCATE = frozenset({ContactStatus.INACTIVE, ContactStatus.DO_NOT_CALL})
+CANNOT_ALLOCATE = frozenset({ContactStatus.INACTIVE})
 
 
 @dataclass(frozen=True)
@@ -85,7 +85,7 @@ def caller_list_counts():
 
 
 def unallocated_active_contacts():
-    return Contact.objects.filter(status=ContactStatus.ACTIVE).exclude(pk__in=allocated_contact_ids())
+    return Contact.objects.filter(status__in=CALLABLE_STATUSES).exclude(pk__in=allocated_contact_ids())
 
 
 def allocated_contact_ids():
@@ -182,16 +182,16 @@ def check_plan(changes, effective_date):
     if closed:
         names = ", ".join(str(c) for c in closed[:5])
         errors.append(
-            f"{len(closed)} contact(s) are Inactive or Do not call and cannot be allocated ({names}). Reactivate them first."
+            f"{len(closed)} contact(s) are Inactive and cannot be allocated ({names}). Reactivate them first."
         )
     non_active = [
         ch.contact
         for ch in changes
-        if ch.to_caller and status_of.get(ch.contact.pk) not in CANNOT_ALLOCATE | {ContactStatus.ACTIVE}
+        if ch.to_caller and status_of.get(ch.contact.pk) not in CANNOT_ALLOCATE | CALLABLE_STATUSES
     ]
     if non_active:
         warnings.append(
-            f"{len(non_active)} contact(s) are not Active; they will not get call tasks until reactivated."
+            f"{len(non_active)} contact(s) are On Hold; they will not be called until their status is changed."
         )
     inactive_callers = {ch.to_caller for ch in changes if ch.to_caller and not ch.to_caller.is_active}
     for caller in inactive_callers:
@@ -337,7 +337,7 @@ def assign_individual(contact, to_caller, *, effective_date, actor, reason, sync
 
 
 def end_allocation(contact, *, effective_date, actor, reason):
-    """Close the open allocation (contact Inactive / Do not call). No-op if unallocated."""
+    """Close the open allocation (Saint made Inactive). No-op if unallocated."""
     alloc = current_allocation(contact)
     if alloc is None:
         return None
@@ -353,12 +353,6 @@ def end_allocation(contact, *, effective_date, actor, reason):
 
 
 # --- Cycles ----------------------------------------------------------------
-
-
-def add_months(day, months):
-    month_index = day.month - 1 + months
-    year, month = day.year + month_index // 12, month_index % 12 + 1
-    return date(year, month, min(day.day, calendar.monthrange(year, month)[1]))
 
 
 def default_cycle_dates(today=None):

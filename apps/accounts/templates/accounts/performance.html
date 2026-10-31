@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Performance{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'team:list' %}">Calling Team</a></li><li class="breadcrumb-item active" aria-current="page">Performance</li></ol></nav>
+{% include "includes/ui/page_header.html" with title="Performance" subtitle="Calls attempted out of calls assigned, best first. Below the goal line means Partially Active." only %}
+
+<nav class="ems-chips ems-chips--wrap mb-2" aria-label="Period">
+  {% for m in periods %}<a class="ems-chip{% if m == months %} active{% endif %}" href="?months={{ m }}"{% if m == months %} aria-current="page"{% endif %}>{% if m == 1 %}Last month{% else %}Last {{ m }} months{% endif %}</a>{% endfor %}
+</nav>
+<p class="small ems-muted mb-3">Congregations from {{ start|date:"j M Y" }} until yesterday · goal {{ threshold }}% <span class="d-inline-block align-middle ms-1" style="width:1px;height:12px;background:var(--ems-muted)" aria-hidden="true"></span></p>
+
+{% if rows %}
+<section class="card mb-3" aria-label="Callers by calls attempted">
+  {% for row in rows %}
+  <div class="ems-perf-row" title="{{ row.user|display_name }}: {{ row.completed }} of {{ row.assigned }} calls attempted ({{ row.completion_rate }}%)">
+    <div class="min-w-0">
+      <a class="fw-semibold text-decoration-none" href="{% url 'team:detail' row.user.pk %}">{{ forloop.counter }}. {{ row.user|display_name }}</a>
+      {% if row.status != "active" %}{% include "accounts/team_status_badge.html" with status=row.status only %}{% endif %}
+      <div class="small ems-muted">{{ row.completed }} of {{ row.assigned }} calls · {{ row.connected }} connected · {{ row.yes }} Yes</div>
+    </div>
+    <div class="ems-perf-row__value">{{ row.completion_rate }}%</div>
+    <div class="ems-perf-row__bar">
+      <div class="ems-hbar" role="img" aria-label="{{ row.completion_rate }}% of calls attempted">
+        <div class="ems-hbar__fill" style="width: {{ row.completion_rate }}%"></div>
+        <div class="ems-hbar__goal" style="left: {{ threshold }}%"></div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% else %}
+  {% include "includes/ui/empty_state.html" with icon="graph-up" title="No calls in this period yet" text="Performance appears after the first congregation of the period has taken place." only %}
+{% endif %}
+{% if without_calls %}<p class="small ems-muted">No calls assigned in this period: {% for m in without_calls %}{{ m|display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+{% endblock %}

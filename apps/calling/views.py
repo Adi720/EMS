@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
@@ -9,6 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import FormView, ListView, TemplateView
 
+from apps.accounts import performance
 from apps.accounts.models import User
 from apps.allocations.models import Allocation
 from apps.core.permissions import CallerRequiredMixin, CoordinatorRequiredMixin, RoleRequiredMixin
@@ -79,6 +81,12 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
             outcome_help=OUTCOME_HELP,
             week_label=congregation_label(services.next_sunday()),
             assigned_saints=Allocation.objects.filter(caller=user, effective_to__isnull=True).count(),
+            my_performance=performance.performance(callers=[user]).get(user.pk),
+            team_status=performance.status_for(user),
+            partial_threshold=settings.PARTIALLY_ACTIVE_BELOW,
+            week_hold=EmsSession.objects.filter(
+                session_date=services.next_sunday(), venue="", on_hold=True
+            ).first(),
         )
         if session is None:
             return context
@@ -89,6 +97,34 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
             "attempt_count" if show == "" else "contact__full_name", "contact__full_name"
         )
         context.update(tasks=tasks, show=show, summary=metrics.summarize(session_tasks))
+        return context
+
+
+class MyReportView(CallerRequiredMixin, TemplateView):
+    """A caller's own Calling Sewa stats, congregation by congregation."""
+
+    template_name = "calling/my_report.html"
+    PERIODS = {"3": 3, "6": 6, "12": 12}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        period = self.request.GET.get("months", "3")
+        months = self.PERIODS.get(period, 3)
+        start, today = performance.window(months)
+        tasks = CallTask.objects.filter(
+            caller=user, session__session_date__gte=start, session__session_date__lte=today
+        )
+        weeks = sorted(metrics.by_session(tasks), key=lambda r: r["session_obj"].session_date)
+        context.update(
+            months=months,
+            periods=[(int(k), v) for k, v in self.PERIODS.items()],
+            start=start,
+            weeks=weeks,
+            total=metrics.summarize(tasks),
+            goal=settings.PARTIALLY_ACTIVE_BELOW,
+            team_status=performance.status_for(user),
+        )
         return context
 
 
@@ -131,8 +167,8 @@ class TaskDetailView(RoleRequiredMixin, FormView):
         return (
             services.can_record(self.request.user, task)
             and task.session.status == SessionStatus.OPEN
+            and not task.session.on_hold
             and task.status == TaskStatus.OPEN
-            and not task.contact.is_do_not_call
         )
 
     def form_valid(self, form):
@@ -333,6 +369,22 @@ class StartWeeklyCallingView(CoordinatorRequiredMixin, View):
             text += " Closed calling for " + ", ".join(str(s) for s in closed) + "."
         messages.success(request, text)
         return redirect(f"{reverse('core:coordinator_dashboard')}?session={session.pk}")
+
+
+class WeekHoldView(CoordinatorRequiredMixin, View):
+    """Switch "No Calling Sewa this week" on or off for the coming Sunday."""
+
+    def post(self, request):
+        on_hold = request.POST.get("on_hold") == "1"
+        session = services.set_week_hold(request.user, on_hold, note=request.POST.get("note", ""))
+        if on_hold:
+            messages.warning(
+                request,
+                f"No Calling Sewa for {session.label}. Callers see a notice and cannot record calls.",
+            )
+        else:
+            messages.success(request, "Calling Sewa is back on for this week.")
+        return redirect("core:coordinator_dashboard")
 
 
 def describe(totals):

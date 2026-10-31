@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Requests{% endblock %}
+{% block content %}
+{% include "includes/ui/page_header.html" with title="Requests" subtitle="Requests from callers. Approving “Saint is unable to attend” makes the Saint Inactive; approving “I need a break” marks the caller On Leave." only %}
+
+<nav class="ems-chips ems-chips--wrap mb-3" aria-label="Show">
+  <a class="ems-chip{% if show == 'pending' %} active{% endif %}" href="?show=pending"{% if show == 'pending' %} aria-current="page"{% endif %}>Waiting</a>
+  <a class="ems-chip{% if show == 'all' %} active{% endif %}" href="?show=all"{% if show == 'all' %} aria-current="page"{% endif %}>All</a>
+</nav>
+
+{% if object_list %}
+<div class="d-grid gap-2">
+  {% for item in object_list %}
+  <article class="card card-body">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="min-w-0">
+        <h2 class="ems-section-title">{{ item.get_kind_display }}</h2>
+        <div class="small ems-muted">
+          {% if item.contact %}<a href="{% url 'contacts:detail' item.contact.pk %}">{{ item.contact.full_name }}</a> · {% elif item.contact_name %}{{ item.contact_name }} · {% endif %}from {{ item.raised_by }} · {{ item.created_at|date:"j M Y, H:i" }}
+        </div>
+      </div>
+      {% include "caller_requests/request_badge.html" %}
+    </div>
+    <p class="mt-2 mb-2">{{ item.reason|linebreaksbr }}</p>
+    {% if item.is_pending %}
+      <form method="post" class="d-flex flex-wrap gap-2 align-items-end">
+        {% csrf_token %}
+        <div class="flex-fill" style="min-width: 12rem"><label class="form-label small" for="note-{{ item.pk }}">Note to the caller (optional)</label><input class="form-control" id="note-{{ item.pk }}" name="note" maxlength="1000"></div>
+        <button class="btn btn-primary" formaction="{% url 'caller_requests:decide' item.pk 'approve' %}">{% icon "check-lg" %}Approve</button>
+        <button class="btn btn-outline-secondary" formaction="{% url 'caller_requests:decide' item.pk 'reject' %}">{% icon "x-lg" %}Not approve</button>
+      </form>
+      {% if item.kind == "wrong_number" and item.contact %}<p class="small ems-muted mt-2 mb-0">After approving, <a href="{% url 'contacts:edit' item.contact.pk %}">edit the Saint's mobile number</a>.</p>{% endif %}
+      {% if item.kind == "on_leave" %}<p class="small ems-muted mt-2 mb-0">Approving marks {{ item.raised_by }} On Leave. Then <a href="{% url 'allocations:change' %}?kind=move_all&amp;from_caller={{ item.raised_by.pk }}">give their Saints to another caller</a>.</p>{% endif %}
+      {% if item.kind == "change_caller" and item.contact %}<p class="small ems-muted mt-2 mb-0">After approving, <a href="{% url 'contacts:detail' item.contact.pk %}">move the Saint to another caller</a>.</p>{% endif %}
+    {% else %}
+      <div class="small ems-muted">{{ item.get_status_display }} by {{ item.decided_by }} · {{ item.decided_at|date:"j M Y, H:i" }}{% if item.decision_note %} — {{ item.decision_note }}{% endif %}</div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% include "includes/pagination.html" %}
+{% else %}
+  {% include "includes/ui/empty_state.html" with icon="inbox" title="No requests waiting" text="When a caller raises a request it appears here, and the Requests menu shows a count." only %}
+{% endif %}
+{% endblock %}

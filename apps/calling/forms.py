@@ -21,9 +21,14 @@ class SessionForm(BootstrapFormMixin, forms.ModelForm):
 
 class AttemptForm(BootstrapFormMixin, forms.Form):
     outcome = forms.ChoiceField(choices=Outcome.choices, widget=forms.RadioSelect)
-    notes = forms.CharField(required=False, max_length=1000, widget=forms.Textarea(attrs={"rows": 2}))
+    notes = forms.CharField(
+        label="Remarks",
+        required=False,
+        max_length=1000,
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Please type your remarks"}),
+    )
     callback_at = forms.DateTimeField(
-        label="Call back at (optional)",
+        label="Call back at",
         required=False,
         widget=DateTimeInput(),
         input_formats=["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"],

@@ -45,7 +45,7 @@ def test_saturday_starts_calling_and_emails_each_caller_once(callers_with_contac
     assert len(mail.outbox) == 1
     message = mail.outbox[0]
     assert message.to == ["caller@example.org"]
-    assert "EMS Congregation (1/11/26)" in message.subject
+    assert "EMS Congregation (1 Nov 2026)" in message.subject
     assert "2 contact(s)" in message.body and "https://ems.example.org/my-calls/" in message.body
 
     output = run("--date", SATURDAY.isoformat())  # e.g. the scheduler runs twice

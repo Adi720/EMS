@@ -19,7 +19,7 @@ from django.utils import timezone
 from apps.allocations.models import Allocation
 from apps.allocations.services import active_on_filter, allocation_on
 from apps.audit.services import log_event
-from apps.contacts.models import Contact, ContactStatus
+from apps.contacts.models import CALLABLE_STATUSES, Contact
 
 from .models import CallAttempt, CallTask, EmsSession, Outcome, SessionStatus, TaskStatus
 
@@ -29,7 +29,7 @@ class CallingError(Exception):
 
 
 def _withdraw_reason(contact, allocation):
-    if contact.status != ContactStatus.ACTIVE:
+    if contact.status not in CALLABLE_STATUSES:
         return f"Contact is {contact.get_status_display()}"
     if allocation is None:
         return "No caller allocated on the session date"
@@ -38,7 +38,7 @@ def _withdraw_reason(contact, allocation):
 
 def _sync_one(session, contact, actor):
     allocation = allocation_on(contact, session.session_date)
-    eligible = contact.status == ContactStatus.ACTIVE and allocation is not None
+    eligible = contact.status in CALLABLE_STATUSES and allocation is not None
     task = CallTask.objects.select_for_update().filter(session=session, contact=contact).first()
 
     if task is None:
@@ -182,10 +182,15 @@ def start_weekly_calling(actor, today=None):
 
     Returns (session, task totals, congregations closed).
     """
+    from apps.contacts.services import promote_new_saints
+
+    promote_new_saints(today)
     sunday = next_sunday(today)
     session = EmsSession.objects.select_for_update().filter(session_date=sunday, venue="").first()
     if session and session.status == SessionStatus.CLOSED:
         raise CallingError(f"Calling for {session} is already closed. Reopen it from its page if needed.")
+    if session and session.on_hold:
+        raise CallingError(f"There is no Calling Sewa for {session.label}. Switch the hold off first.")
     closed = [
         close_session(earlier, actor)
         for earlier in EmsSession.objects.filter(status=SessionStatus.OPEN, session_date__lt=sunday)
@@ -211,10 +216,10 @@ def record_attempt(task, *, outcome, actor, notes="", callback_at=None):
         raise CallingError("Choose one of the four outcomes.")
     if task.session.status != SessionStatus.OPEN:
         raise CallingError("Calling is not open for this congregation.")
+    if task.session.on_hold:
+        raise CallingError("There is no Calling Sewa this week; results cannot be recorded.")
     if task.status != TaskStatus.OPEN:
         raise CallingError("This task has been withdrawn.")
-    if task.contact.status == ContactStatus.DO_NOT_CALL:
-        raise CallingError("This contact asked not to be called.")
 
     attempt = CallAttempt.objects.create(
         task=task, outcome=outcome, notes=notes, callback_at=callback_at, recorded_by=actor
@@ -234,3 +239,25 @@ def record_attempt(task, *, outcome, actor, notes="", callback_at=None):
         on_behalf_of=task.caller_id if task.caller_id != actor.pk else None,
     )
     return attempt
+
+
+@transaction.atomic
+def set_week_hold(actor, on_hold, *, note="", today=None):
+    """Switch "No Calling Sewa this week" for the coming Sunday's congregation."""
+    sunday = next_sunday(today)
+    session = EmsSession.objects.select_for_update().filter(session_date=sunday, venue="").first()
+    if session is None:
+        if not on_hold:
+            return None
+        session = create_session(session_date=sunday, title="", venue="", notes="", actor=actor)
+    session.on_hold = on_hold
+    session.hold_note = note.strip()[:200] if on_hold else ""
+    session.save(update_fields=["on_hold", "hold_note"])
+    log_event(
+        actor,
+        "session.hold" if on_hold else "session.resume",
+        f"{'No Calling Sewa' if on_hold else 'Calling Sewa back on'} for {session.label}",
+        session,
+        note=session.hold_note,
+    )
+    return session

@@ -5,19 +5,26 @@ from apps.core.phones import display_phone
 
 
 class ContactStatus(models.TextChoices):
+    NEW = "new", "New"
     ACTIVE = "active", "Active"
-    TEMP_UNAVAILABLE = "temp_unavailable", "Temporarily unavailable"
-    INACTIVE = "inactive", "Inactive / moved away"
-    DO_NOT_CALL = "do_not_call", "Do not call"
+    ON_HOLD = "on_hold", "On Hold"
+    INACTIVE = "inactive", "Inactive"
+
+
+# Saints who are on the weekly call lists. New Saints are called like Active ones; they
+# become Active automatically NEW_PERIOD_MONTHS after their registration date.
+CALLABLE_STATUSES = frozenset({ContactStatus.NEW, ContactStatus.ACTIVE})
 
 
 class StatusReason(models.TextChoices):
     CREATED = "created", "Contact created"
+    NEW_PERIOD_ENDED = "new_period_ended", "New period ended"
     IMPORTED = "imported", "Imported from workbook"
-    TEMPORARILY_AWAY = "temporarily_away", "Temporarily away (travel, exams, health…)"
+    TEMPORARILY_AWAY = "temporarily_away", "Taking a break (travel, exams, health…)"
     MOVED_AWAY = "moved_away", "Moved away"
     CANNOT_ATTEND = "cannot_attend", "No longer able to attend"
     REQUESTED_NO_CALLS = "requested_no_calls", "Asked not to be called"
+    CALLER_REQUEST = "caller_request", "Request from their caller"
     AVAILABLE_AGAIN = "available_again", "Available again"
     CORRECTION = "correction", "Correction of an earlier status"
     OTHER = "other", "Other"
@@ -48,14 +55,16 @@ class Contact(models.Model):
     collected_by_name = models.CharField(
         "Collected by", max_length=150, blank=True, help_text="Stall seva member (free text)."
     )
+    skills = models.CharField(max_length=300, blank=True)
+    sewa = models.CharField("Sewa", max_length=300, blank=True)
     notes = models.TextField(blank=True, max_length=2000)
 
     status = models.CharField(
-        max_length=20, choices=ContactStatus.choices, default=ContactStatus.ACTIVE, db_index=True
+        max_length=20, choices=ContactStatus.choices, default=ContactStatus.NEW, db_index=True
     )
     status_since = models.DateField(null=True, blank=True)
     review_date = models.DateField(
-        null=True, blank=True, help_text="For temporarily unavailable contacts: when to check again."
+        null=True, blank=True, help_text="For Saints On Hold: the next date to call them."
     )
     legacy_data = models.JSONField(default=dict, blank=True)
 
@@ -77,11 +86,7 @@ class Contact(models.Model):
 
     @property
     def is_callable(self):
-        return self.status == ContactStatus.ACTIVE
-
-    @property
-    def is_do_not_call(self):
-        return self.status == ContactStatus.DO_NOT_CALL
+        return self.status in CALLABLE_STATUSES
 
     @property
     def phone_display(self):

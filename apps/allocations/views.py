@@ -79,7 +79,7 @@ class BulkChangeView(CoordinatorRequiredMixin, View):
 
     def selection_context(self, request):
         qs, filter_form = filter_contacts(contact_queryset(), request.GET)
-        contacts = list(qs.exclude(status=ContactStatus.DO_NOT_CALL).order_by("full_name", "id")[:500])
+        contacts = list(qs.order_by("full_name", "id")[:500])
         for contact in contacts:
             contact.caller_label = caller_label(contact)
         params = request.GET.copy()

@@ -3,6 +3,14 @@
 {% block title %}My calls{% endblock %}
 {% block content %}
 <div class="ems-caller">
+{% if week_hold %}
+  <div class="alert alert-warning">{% icon "pause-circle" %}<div class="alert-body"><strong>No Calling Sewa this week</strong> ({{ week_hold.label }}).{% if week_hold.hold_note %} {{ week_hold.hold_note }}{% endif %} Please do not call; results cannot be recorded.</div></div>
+{% endif %}
+{% if team_status == "on_leave" %}
+  <div class="alert alert-info">{% icon "cup-hot" %}<div class="alert-body"><strong>You are On Leave.</strong> Take care — your coordinator is looking after your Saints until you are back.</div></div>
+{% elif team_status == "partially_active" and my_performance %}
+  <div class="alert alert-warning">{% icon "heart" %}<div class="alert-body">In the last month you called <strong>{{ my_performance.completed }} of {{ my_performance.assigned }}</strong> Saints ({{ my_performance.completion_rate }}%). The goal is {{ partial_threshold }}% — every call is precious seva. If you need a break, use <a class="alert-link" href="{% url 'caller_requests:mine' %}">Raise Request</a>.</div></div>
+{% endif %}
 {% if not session %}
   <section class="ems-hero mb-3">
     <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
@@ -24,7 +32,7 @@
       <div class="min-w-0">
         <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
         <h1 class="ems-hero__title mb-1" id="calls-title">{{ session.label }}</h1>
-        <div class="small ems-muted">{% if session.is_open %}Calling is open{% else %}{{ session.get_status_display }} — results are read-only{% endif %}</div>
+        <div class="small ems-muted">{% if session.on_hold %}No Calling Sewa this week{% elif session.is_open %}Calling is open{% else %}{{ session.get_status_display }} — results are read-only{% endif %}</div>
       </div>
       {% if sessions|length > 1 %}
       <form method="get" class="ems-caller__switch">
@@ -51,7 +59,7 @@
     <div class="alert alert-success">{% icon "check-circle" %}<div class="alert-body"><strong>All calls done — thank you for your seva.</strong> You can still update a result if someone calls back.</div></div>
   {% endif %}
 
-  <nav class="ems-chips mb-3" aria-label="Show">
+  <nav class="ems-chips ems-chips--wrap mb-3" aria-label="Show">
     <a class="ems-chip{% if not show %} active{% endif %}" href="?session={{ session.pk }}"{% if not show %} aria-current="page"{% endif %}>All <span>{{ summary.assigned }}</span></a>
     <a class="ems-chip{% if show == 'pending' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=pending"{% if show == 'pending' %} aria-current="page"{% endif %}>Pending <span>{{ summary.not_attempted }}</span></a>
     <a class="ems-chip{% if show == 'completed' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=completed"{% if show == 'completed' %} aria-current="page"{% endif %}>Done <span>{{ summary.completed }}</span></a>
@@ -59,10 +67,10 @@
     <a class="ems-chip{% if show == 'callback' %} active{% endif %}" href="?session={{ session.pk }}&amp;show=callback"{% if show == 'callback' %} aria-current="page"{% endif %}>Call back</a>
   </nav>
 
-  <div class="d-grid gap-3">
+  <div class="d-grid gap-2">
   {% for task in tasks %}
     <article class="ems-call-card task-card{% if task.attempt_count %} is-done{% endif %}" id="task-{{ task.pk }}" aria-labelledby="name-{{ task.pk }}">
-      <div class="d-flex justify-content-between align-items-start gap-2">
+      <div class="ems-call-card__head">
         <div class="min-w-0">
           <h2 class="ems-call-card__name" id="name-{{ task.pk }}"><a href="{% url 'calling:task_detail' task.pk %}">{{ task.contact.full_name }}</a></h2>
           <div class="small ems-muted">{% icon "geo-alt" %} {{ task.contact.area }}{% if task.attempt_count %} · {{ task.attempt_count }} attempt{{ task.attempt_count|pluralize }}{% endif %}</div>
@@ -70,12 +78,9 @@
         {% include "includes/ui/outcome_badge.html" with task=task only %}
       </div>
 
-      {% if task.contact.is_do_not_call %}
-        <div class="alert alert-danger small mt-3 mb-0">{% icon "slash-circle" %}<div class="alert-body">Do not call — this person asked not to be contacted.</div></div>
-      {% else %}
-        <a class="btn btn-primary btn-lg w-100 mt-3 ems-call-btn" href="tel:{{ task.contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ task.contact.phone_display }}</a>
-        {% if session.is_open %}
-          <div class="small ems-muted mt-3 mb-2">{% if task.attempt_count %}Update the result:{% else %}After the call, tap the result:{% endif %}</div>
+        <a class="btn btn-primary w-100 mt-2 ems-call-btn" href="tel:{{ task.contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ task.contact.phone_display }}</a>
+        {% if session.is_open and not session.on_hold %}
+          <div class="small ems-muted mt-2 mb-1">{% if task.attempt_count %}Update the result{% else %}After the call, tap the result{% endif %}</div>
           <div class="ems-outcomes">
             {% for value, label in outcomes %}
             <form method="post" action="{% url 'calling:quick_attempt' task.pk %}">
@@ -89,10 +94,12 @@
             </form>
             {% endfor %}
           </div>
-          <a class="small d-inline-flex align-items-center gap-1 mt-2" href="{% url 'calling:task_detail' task.pk %}">{% icon "pencil-square" %}Add a note or call-back time</a>
+          <div class="d-flex flex-wrap justify-content-between gap-2 mt-2 small">
+            <a class="d-inline-flex align-items-center gap-1" href="{% url 'calling:task_detail' task.pk %}">{% icon "pencil-square" %}Add remarks or call-back time</a>
+            <a class="d-inline-flex align-items-center gap-1 ems-muted" href="{% url 'caller_requests:mine' %}?contact={{ task.contact_id }}">{% icon "send" %}Raise request</a>
+          </div>
         {% endif %}
-      {% endif %}
-      {% if task.callback_at %}<div class="small mt-2 text-warning-emphasis">{% icon "alarm" %} Call back {{ task.callback_at|date:"D d M, H:i" }}</div>{% endif %}
+      {% if task.callback_at %}<div class="small mt-2 text-warning-emphasis">{% icon "alarm" %} Call back {{ task.callback_at|date:"D j M Y, H:i" }}</div>{% endif %}
     </article>
   {% empty %}
     <div class="ems-empty">

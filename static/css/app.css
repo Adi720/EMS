@@ -856,3 +856,122 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 
 /* Selection checkbox column in tables */
 .ems-col-check { width: 2.5rem; }
+
+/* ---- Phone layout (most use is on phones) ------------------------------------- */
+
+/* Screen-reader-only text inside a scrolling table must not widen the page. */
+.table-responsive { position: relative; }
+
+.ems-chips--wrap { flex-wrap: wrap; overflow: visible; }
+
+@media (max-width: 575.98px) {
+  .ems-content { padding: 1rem 0.875rem 2.5rem; }
+  .ems-page-header { gap: 0.75rem; margin-bottom: 1rem; align-items: flex-start; }
+  .ems-page-title { font-size: 1.3rem; }
+  .ems-page-subtitle { font-size: 0.875rem; }
+  .ems-page-actions { width: 100%; }
+  .ems-page-actions > .btn-primary, .ems-page-actions > form { flex: 1 1 auto; }
+  .ems-hero { padding: 1rem; }
+  .ems-hero__title { font-size: 1.2rem; }
+  .ems-stat__value, .stat-value { font-size: 1.4rem; }
+  .card-body { padding: 0.875rem; }
+  .ems-chip { min-height: 32px; padding: 0.2rem 0.7rem; font-size: 0.8rem; }
+  .breadcrumb { margin-bottom: 0.5rem; }
+  .ems-gap-section { margin-bottom: 1.25rem; }
+}
+
+/* Saints directory on phones: search always visible, the other filters fold away. */
+@media (min-width: 768px) {
+  .ems-filters-more.collapse { display: block !important; height: auto !important; }
+}
+
+/* One line per Saint in the phone list */
+.ems-saint-row { display: flex; gap: 0.75rem; align-items: center; padding: 0.7rem 0.875rem; color: var(--ems-text); text-decoration: none; }
+.ems-saint-row + .ems-saint-row { border-top: 1px solid var(--ems-border); }
+.ems-saint-row:hover { background: var(--ems-surface-2); color: var(--ems-text); }
+.ems-saint-row__name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ems-saint-row__meta { font-size: 0.8rem; color: var(--ems-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Compact call card: four result buttons in one row */
+.ems-call-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.ems-call-card .ems-call-btn { min-height: 46px; }
+@media (max-width: 575.98px) {
+  .ems-call-card { padding: 0.875rem; }
+  .ems-outcomes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
+  .ems-outcome { min-height: 54px; padding: 0.35rem 0.15rem; font-size: 0.72rem; font-weight: 600; }
+  .ems-outcome .bi { font-size: 1.1rem; }
+}
+
+/* Caller-by-caller progress as cards on phones */
+.ems-caller-rows { display: grid; gap: 0.5rem; }
+.ems-caller-row { padding: 0.65rem 0.75rem; border: 1px solid var(--ems-border); border-radius: var(--ems-radius); }
+
+/* Quick actions: two per row on phones, without the descriptions */
+.ems-actions-grid { display: grid; gap: 0.5rem; align-content: start; }
+.ems-actions-grid form { margin: 0; }
+@media (max-width: 575.98px) {
+  .ems-actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ems-actions-grid .ems-action { height: 100%; padding: 0.6rem 0.7rem; font-size: 0.85rem; }
+  .ems-actions-grid .ems-action small { display: none; }
+}
+
+/* Calling Team cards: a coloured edge shows the member's status */
+.ems-member { border-left: 4px solid var(--ems-success); }
+.ems-member--partially_active { border-left-color: var(--ems-warning); background: color-mix(in srgb, var(--ems-surface) 88%, var(--ems-warning-soft)); }
+.ems-member--on_leave { border-left-color: var(--ems-info); }
+.ems-member--inactive { border-left-color: var(--ems-border-strong); }
+
+/* Horizontal bar (one series, ranked): 10px track, 4px rounded data-end, goal hairline */
+.ems-hbar { position: relative; height: 10px; border-radius: 0 4px 4px 0; background: var(--ems-accent-soft); }
+.ems-hbar__fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--ems-chart); }
+.ems-hbar__goal { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ems-muted); }
+.ems-perf-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 0.75rem; padding: 0.7rem 0.875rem; align-items: center; }
+.ems-perf-row + .ems-perf-row { border-top: 1px solid var(--ems-border); }
+.ems-perf-row:hover { background: var(--ems-surface-2); }
+.ems-perf-row__value { font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
+.ems-perf-row__bar { grid-column: 1 / -1; }
+
+/* Column chart (one series): 24px max columns, 4px rounded tops, hairline grid, hover/focus tooltip */
+.ems-colchart__plot { position: relative; height: 170px; margin: 0.75rem 0 0 2.25rem; }
+.ems-colchart__grid { position: absolute; left: 0; right: 0; border-top: 1px solid var(--ems-border); }
+.ems-colchart__grid span { position: absolute; right: 100%; transform: translateY(-50%); padding-right: 0.4rem; font-size: 0.7rem; color: var(--ems-muted); }
+.ems-colchart__grid--base { border-top-color: var(--ems-border-strong); }
+.ems-colchart__goal { position: absolute; left: 0; right: 0; border-top: 1px solid var(--ems-muted); z-index: 1; }
+.ems-colchart__cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px; }
+.ems-colchart__col { position: relative; flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; justify-content: center; outline: none; cursor: default; }
+.ems-colchart__bar { width: 100%; max-width: 24px; border-radius: 4px 4px 0 0; background: var(--ems-chart); min-height: 2px; }
+.ems-colchart__col:hover .ems-colchart__bar, .ems-colchart__col:focus-visible .ems-colchart__bar { filter: brightness(1.15); }
+.ems-colchart__col:focus-visible { box-shadow: var(--ems-focus-ring); border-radius: 4px; }
+.ems-colchart__value { position: absolute; margin-bottom: 0.2rem; font-size: 0.72rem; font-weight: 650; color: var(--ems-text); white-space: nowrap; }
+.ems-colchart__col:hover::after, .ems-colchart__col:focus-visible::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  z-index: 3; padding: 0.3rem 0.5rem; border-radius: var(--ems-radius-sm); background: var(--ems-text); color: var(--ems-surface);
+  font-size: 0.72rem; white-space: nowrap; pointer-events: none;
+}
+.ems-colchart__col:first-child:hover::after, .ems-colchart__col:first-child:focus-visible::after { left: 0; transform: none; }
+.ems-colchart__col:last-child:hover::after, .ems-colchart__col:last-child:focus-visible::after { left: auto; right: 0; transform: none; }
+.ems-colchart__labels { display: flex; gap: 2px; margin-left: 2.25rem; margin-top: 0.3rem; }
+.ems-colchart__labels span { flex: 1 1 0; text-align: center; font-size: 0.68rem; color: var(--ems-muted); white-space: nowrap; overflow: hidden; }
+@media (max-width: 575.98px) { .ems-colchart__labels span:nth-child(even) { visibility: hidden; } }
+
+/* Caller tab bar on phones */
+.ems-tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030;
+  display: flex; border-top: 1px solid var(--ems-border); background: var(--ems-surface);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.ems-tabbar__link {
+  flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+  padding: 0.45rem 0.25rem; min-height: 56px; font-size: 0.72rem; font-weight: 600;
+  color: var(--ems-muted); text-decoration: none;
+}
+.ems-tabbar__link .bi { font-size: 1.25rem; }
+.ems-tabbar__link.active { color: var(--ems-accent-text); }
+@media (max-width: 991.98px) { .has-tabbar .ems-content { padding-bottom: 5.5rem; } }
+
+/* Daily Sewa blessing */
+.ems-blessing { border-radius: var(--ems-radius-lg); }
+.ems-blessing__icon {
+  width: 56px; height: 56px; margin: 0 auto 0.75rem; display: grid; place-items: center;
+  border-radius: 50%; background: var(--ems-accent-soft); color: var(--ems-accent-text); font-size: 1.6rem;
+}

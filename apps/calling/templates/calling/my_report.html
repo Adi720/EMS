@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}My Report{% endblock %}
+{% block content %}
+<div class="ems-caller">
+  {% include "includes/ui/page_header.html" with title="My Report" subtitle="Your Calling Sewa, congregation by congregation. Thank you for every call." only %}
+
+  <nav class="ems-chips ems-chips--wrap mb-3" aria-label="Period">
+    {% for m, label in periods %}<a class="ems-chip{% if m == months %} active{% endif %}" href="?months={{ m }}"{% if m == months %} aria-current="page"{% endif %}>Last {{ label }} months</a>{% endfor %}
+  </nav>
+
+  {% if weeks %}
+  <div class="row g-2 mb-3">
+    <div class="col-6 col-sm-3">{% include "includes/ui/stat_card.html" with label="Calls given" value=total.assigned icon="people" tone="accent" only %}</div>
+    <div class="col-6 col-sm-3">{% with note=total.completion_rate|stringformat:"d"|add:"% done" %}{% include "includes/ui/stat_card.html" with label="Calls made" value=total.completed icon="telephone-outbound" tone="accent" note=note only %}{% endwith %}</div>
+    <div class="col-6 col-sm-3">{% include "includes/ui/stat_card.html" with label="Connected" value=total.connected icon="telephone-inbound" tone="info" only %}</div>
+    <div class="col-6 col-sm-3">{% include "includes/ui/stat_card.html" with label="Yes" value=total.yes icon="check-circle" tone="success" only %}</div>
+  </div>
+
+  <section class="card mb-3" aria-labelledby="chart-title">
+    <div class="ems-card-header">
+      <h2 class="ems-section-title" id="chart-title">Calls made, % of calls given</h2>
+      <span class="small ems-muted">goal {{ goal }}%</span>
+    </div>
+    <div class="card-body">
+      <div class="ems-colchart" role="img" aria-label="Calls made per congregation as a percentage; the table below has every value.">
+        <div class="ems-colchart__plot">
+          <div class="ems-colchart__grid" style="bottom: 100%"><span>100%</span></div>
+          <div class="ems-colchart__grid" style="bottom: 50%"><span>50%</span></div>
+          <div class="ems-colchart__grid ems-colchart__grid--base" style="bottom: 0"><span>0</span></div>
+          <div class="ems-colchart__goal" style="bottom: {{ goal }}%"></div>
+          <div class="ems-colchart__cols">
+            {% for w in weeks %}
+            <div class="ems-colchart__col" tabindex="0" data-tip="{{ w.session_obj.session_date|date:'j M' }}: {{ w.completed }} of {{ w.assigned }} calls ({{ w.completion_rate|default:0 }}%) · {{ w.yes }} Yes" aria-label="{{ w.session_obj.session_date|date:'j M Y' }}: {{ w.completion_rate|default:0 }}%">
+              <span class="ems-colchart__bar" style="height: {{ w.completion_rate|default:0 }}%"></span>
+              {% if forloop.last %}<span class="ems-colchart__value" style="bottom: {{ w.completion_rate|default:0 }}%">{{ w.completion_rate|default:0 }}%</span>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="ems-colchart__labels" aria-hidden="true">
+          {% for w in weeks %}<span>{{ w.session_obj.session_date|date:"j M" }}</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card mb-3" aria-labelledby="table-title">
+    <div class="ems-card-header"><h2 class="ems-section-title" id="table-title">Every congregation</h2></div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Congregation</th><th class="text-end">Made</th><th class="text-end">Yes</th><th class="text-end">Not Possible</th><th class="text-end">Will Try</th></tr></thead>
+        <tbody>
+          {% for w in weeks reversed %}
+          <tr>
+            <td class="text-nowrap">{{ w.session_obj.session_date|date:"j M Y" }}</td>
+            <td class="text-end ems-num">{{ w.completed }}/{{ w.assigned }}</td>
+            <td class="text-end ems-num">{{ w.yes }}</td>
+            <td class="text-end ems-num">{{ w.not_possible }}</td>
+            <td class="text-end ems-num">{{ w.will_try }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% else %}
+    {% include "includes/ui/empty_state.html" with icon="bar-chart-line" title="No calls in this period yet" text="After your first congregation of calling, your figures appear here." only %}
+  {% endif %}
+</div>
+{% endblock %}

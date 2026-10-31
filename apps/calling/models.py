@@ -13,8 +13,8 @@ class SessionStatus(models.TextChoices):
 
 
 def congregation_label(day):
-    """Display name used everywhere, e.g. 'EMS Congregation (1/11/26)'."""
-    return f"EMS Congregation ({day.day}/{day.month}/{day:%y})"
+    """Display name used everywhere, e.g. 'EMS Congregation (1 Nov 2026)'."""
+    return f"EMS Congregation ({day.day} {day:%b %Y})"
 
 
 class Outcome(models.TextChoices):
@@ -49,13 +49,16 @@ class ReportCategory(models.TextChoices):
 
 
 class EmsSession(models.Model):
-    """One Sunday EMS Congregation (shown to users as 'EMS Congregation (d/m/yy)')."""
+    """One Sunday EMS Congregation (shown to users as 'EMS Congregation (1 Nov 2026)')."""
 
     session_date = models.DateField("Sunday date")
     title = models.CharField(max_length=120, blank=True)
     venue = models.CharField(max_length=120, blank=True, default="")
     notes = models.TextField(blank=True, max_length=1000)
     status = models.CharField(max_length=10, choices=SessionStatus.choices, default=SessionStatus.DRAFT)
+    # "No Calling Sewa this week": calling cannot start, nothing can be recorded, no reminders.
+    on_hold = models.BooleanField("No calling this week", default=False)
+    hold_note = models.CharField(max_length=200, blank=True)
     # Empty when created automatically by the Saturday reminder job.
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"

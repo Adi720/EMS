@@ -1,0 +1,3 @@
+{% load ui %}{# Export links for the Saints list; keeps the current filters. #}
+<li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=xlsx">{% icon "file-earmark-excel" %}Export Excel</a></li>
+<li><a class="dropdown-item" href="{% url 'contacts:export' %}?{{ querystring }}&amp;format=csv">{% icon "filetype-csv" %}Export CSV</a></li>

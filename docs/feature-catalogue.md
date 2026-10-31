@@ -1,7 +1,7 @@
 # EMS Seva — Feature catalogue
 
 What the application does, who uses each part, and where to find it.
-Each Sunday EMS is called an **EMS Congregation**, shown as e.g. *EMS Congregation (1/11/26)*.
+Each Sunday EMS is called an **EMS Congregation**, shown as e.g. *EMS Congregation (1 Nov 2026)*.
 The people being called are **Saints**; the volunteers who phone them are **callers**.
 
 **Manuals:** [Coordinator](coordinator-user-manual.md) · [Caller](caller-user-manual.md) ·
@@ -25,7 +25,11 @@ Saints never log in.
 | One-click **Start calling** for the coming Sunday — builds every caller's list and closes last week | Coordinator | Dashboard, EMS Congregations |
 | **My calls** phone screen: tap-to-call, four large result buttons, progress, filters (Pending, Done, Not connected, Call back) | Caller | My calls |
 | Four results: **Yes**, **Not Possible**, **Will Try**, **Call Not Connected**; call again and tap again — the latest counts, all attempts are kept | Caller | My calls, call page |
-| Optional note and **call-back time** on any call | Caller | Call page |
+| Optional remarks and **call-back time** on any call | Caller | Call page |
+| **Raise Request**: Saint unable to attend, wrong number, another caller, I need a break, other — coordinators approve or not | Caller → Coordinator | Raise Request, Requests |
+| **My Report**: own calls given / made / connected / Yes, chart per congregation, table | Caller | My Report |
+| Daily **Sewa blessing** message after login (Simran reminder), once a day | Everyone | After login |
+| **No Calling Sewa this week** switch: nothing can start or be recorded, callers see a notice, no reminder emails | Coordinator | Dashboard |
 | **Share reminder on WhatsApp** / copy the reminder message | Coordinator | Dashboard |
 | Optional automatic **Saturday reminder email** to every caller | System administrator sets it up | Server scheduled task |
 | Live progress per caller, connected vs not connected, Yes / Not Possible / Will Try / Unknown | Coordinator | Dashboard, congregation page |
@@ -34,18 +38,23 @@ Saints never log in.
 ### Saints
 | Feature | Who | Where |
 |---|---|---|
-| **Saints Directory**: search by name or mobile, filter by area, caller and status, status tabs with counts | Coordinator | Saints |
+| **Saints Directory**: search by name or mobile, filter by area, caller and status, status buttons with counts | Coordinator | Saints |
+| **Stall Lead** login (`stall.sewa.admin`): adds new Saints only, with the adding person's name; no callers, no call results | Stall Lead | Add Saint |
 | Add and edit Saints; mobile numbers checked (India +91 by default) | Coordinator | Saints |
 | **Duplicate warning** when a mobile number is already used — never merged automatically | Coordinator | Add / edit Saint, import |
-| Status: **Active**, **Temporarily unavailable** (with review date), **Inactive / moved away**, **Do not call** — with reason, date and full history | Coordinator | Saint page |
+| Status: **New** (automatic for 6 months after the stall date, then Active), **Active**, **On Hold** (next call date, 6 months by default), **Inactive** — with reason, date and full history | Coordinator | Saint page |
+| **Skills** and **Sewa** fields (free text, optional) | Coordinator, Stall Lead | Add / edit Saint, export |
 | Saint page with calls, caller history and status history timelines | Coordinator | Saint page |
-| Export Saints to Excel or CSV (Do not call excluded unless chosen) | Coordinator | Saints → Export |
+| Export Saints to Excel or CSV | Coordinator | Saints → Export |
 | **Delete Saints** added by mistake, one at a time or several selected, with confirmation and audit entry; Saints with call results are kept | Coordinator | Saint page, Saints → Delete selected |
 
 ### Team and assignments
 | Feature | Who | Where |
 |---|---|---|
-| **Team**: add callers, edit details, reset passwords, deactivate / reactivate (history kept) | Coordinator | Team |
+| **Calling Team**: add callers, edit details, reset passwords, deactivate / reactivate (history kept) | Coordinator | Calling Team |
+| Team statuses **Active**, **Partially Active** (automatic below 75% of calls made last month, amber card, note to the caller), **On Leave**, **Inactive** | Coordinator | Calling Team |
+| **On Leave** with a prompt to move their Saints; on return, moved Saints stay with the new caller unless ticked to move back | Coordinator | Caller's page |
+| **Performance**: callers sorted best to worst over 1, 2 or 3 months, with the goal line | Coordinator | Performance |
 | Each Saint is looked after by **one caller for about three months** | Coordinator | Assignments |
 | **Assign Saints**, **Move Saints** (whole list), **Swap caller lists**, rotate among several callers (Advanced) — always previewed before applying | Coordinator | Assignments |
 | Warnings for Saints without a caller and when a three-month cycle is ending | Coordinator | Dashboard, Assignments |
@@ -63,7 +72,7 @@ Saints never log in.
 ### Reports and records
 | Feature | Who | Where |
 |---|---|---|
-| **Monthly report** by congregation and by caller, export to Excel / CSV | Coordinator | Monthly reports |
+| **Reports** — **Weekly**, **Monthly** or **3 Months** (week by week), by congregation and by caller, export to Excel / CSV | Coordinator | Reports |
 | Congregation results and call list export | Coordinator | Congregation page → Export |
 | **Audit log** in plain language, filter by activity, person and date; cannot be edited | Coordinator | Audit log |
 
@@ -74,6 +83,8 @@ Saints never log in.
 | Works on phones, tablets and computers | Callers' screens are designed for phones |
 | Callers only ever see their own Saints | Checked on the server for every page |
 | Login lock after 5 wrong passwords; sessions end after 2 hours idle | Unlock in Django Admin or by the administrator |
+| **Forgot password** by email reset link | Needs the user's email and email sending set up |
+| Dates shown as **1 Nov 2026** everywhere | — |
 | Every change recorded | Audit log; passwords and phone numbers are never written to it |
 | Spreadsheet exports protected against formula injection | Excel/CSV |
 

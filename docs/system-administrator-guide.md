@@ -21,7 +21,8 @@ settings, backups, updates and troubleshooting. Day-to-day use is in the
 |---|---|---|
 | System administrator | You, on the server | `python manage.py createsuperuser` |
 | Coordinator | System administrator | Django Admin → Users → Add → then add the **Coordinator** group |
-| Caller | Coordinators (or you) | In the app: **Team → Add caller**, or during the Excel import |
+| Caller | Coordinators (or you) | In the app: **Calling Team → Add caller**, or during the Excel import |
+| Stall Lead | You, on the server | `python manage.py create_stall_lead` (creates `stall.sewa.admin`) |
 
 **Create a coordinator:** your name (top right) → **Django Admin** → **Users** → **Add user** →
 username and password → **Save** → fill in first/last name and email → **Groups: Coordinator** →
@@ -30,6 +31,15 @@ and Caller groups.
 
 Coordinators can only create and manage **Caller-only** accounts; they cannot grant coordinator or
 admin rights, and cannot change coordinator or admin accounts. That is enforced on the server.
+
+**Stall Lead login:** `python manage.py create_stall_lead` creates the shared login
+`stall.sewa.admin` and prints its password **once** — share it privately with the stall team.
+`python manage.py create_stall_lead --reset-password` gives it a new password. This login can only
+add new Saints; each Saint it adds records the name of the person who added it.
+
+**Forgot password** on the login page emails a reset link, so it only works for users with an
+email address and once email sending is set up (section 6). Without that, reset passwords on the
+Calling Team page (callers) or in Django Admin.
 
 **Unlock a locked login** (5 failed attempts lock it for an hour): Django Admin → *Axes → Access
 attempts* → delete the entry, or on the server:
@@ -110,6 +120,9 @@ Data lives in the server's database; anything imported on a laptop stays on that
 | `GENERATED_PASSWORD_LENGTH` | `10` | Passwords created for callers during import |
 | `EMAIL_URL`, `DEFAULT_FROM_EMAIL` | console | Email sending (section 6) |
 | `REMINDER_WEEKDAY` / `REMINDER_AUTO_START` | `5` (Saturday) / `True` | Reminder job (section 6) |
+| `NEW_PERIOD_MONTHS` | `6` | Months after the stall date that a Saint stays **New** |
+| `ON_HOLD_MONTHS` | `6` | Default next call date for **On Hold** |
+| `PARTIALLY_ACTIVE_BELOW` / `PERFORMANCE_MONTHS` | `75` / `1` | A caller below this % of calls made over this many months is **Partially Active** |
 
 After changing `.env`, click **Reload** on the Web tab.
 
@@ -123,9 +136,12 @@ The whole database is **one file**: `~/SNM/db.sqlite3`.
 
 ## 6. Saturday reminder emails (optional)
 
-`manage.py weekly_reminders` runs once a day. On the reminder day (Saturday) it starts that week's
-calling (unless `REMINDER_AUTO_START=False`) and emails each caller who has an email address their
-link and number of Saints — once per congregation, so running it twice is harmless.
+`manage.py weekly_reminders` runs once a day. Every day it turns New Saints into Active ones after
+6 months. On the reminder day (Saturday) it starts that week's calling (unless
+`REMINDER_AUTO_START=False` or a coordinator chose **No Calling Sewa this week**) and emails each
+caller who has an email address their link and number of Saints — once per congregation, so
+running it twice is harmless. The same email settings are used for **Forgot password** and for
+telling coordinators about new caller requests.
 
 1. Create a Gmail account for the seva, turn on 2-Step Verification, create an **App password**.
 2. Add to `.env` (write `@` in the username as `%40`):

@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Max, Q
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.views import View
 from django.views.generic import FormView, TemplateView
 
@@ -10,7 +12,7 @@ from apps.calling.models import CallAttempt, CallTask, EmsSession, SessionStatus
 from apps.calling.services import next_sunday
 from apps.core.permissions import CoordinatorRequiredMixin
 
-from . import team
+from . import performance, team
 from .models import User
 from .roles import Role
 from .team_forms import CallerCreateForm, CallerPasswordForm, CallerProfileForm
@@ -47,11 +49,15 @@ class TeamListView(CoordinatorRequiredMixin, TemplateView):
                 .values_list("caller")
                 .annotate(n=Count("id"))
             )
+        perf = performance.performance(callers=members.values("pk"))
         rows = []
         for member in members:
+            row = perf.get(member.pk)
             rows.append(
                 {
                     "user": member,
+                    "status": performance.team_status(member, row),
+                    "rate": row["completion_rate"] if row else None,
                     "saints": member.saints,
                     "pending": pending.get(member.pk, 0) if session else None,
                     "last_call": last_calls.get(member.pk),
@@ -134,7 +140,10 @@ class TeamDetailView(MemberMixin, TemplateView):
             .select_related("task__contact", "task__session")
             .order_by("-attempted_at")[:15],
             manageable=team.can_manage(self.request.user, member),
+            perf=performance.performance(callers=[member]).get(member.pk),
+            moved_away=team.saints_moved_during_leave(member),
         )
+        context["status"] = performance.team_status(member, context["perf"])
         return context
 
 
@@ -199,3 +208,78 @@ class TeamActiveView(MemberMixin, View):
         except team.TeamError as exc:
             messages.error(request, str(exc))
         return redirect("team:detail", pk=pk)
+
+
+class TeamLeaveView(MemberMixin, View):
+    """Start leave, then go straight to moving the caller's Saints to someone else."""
+
+    def post(self, request, pk):
+        try:
+            team.start_leave(self.member, request.user, reason=request.POST.get("reason", ""))
+        except team.TeamError as exc:
+            messages.error(request, str(exc))
+            return redirect("team:detail", pk=pk)
+        saints = Allocation.objects.filter(caller=self.member, effective_to__isnull=True).count()
+        if not saints:
+            messages.success(request, f"{self.member} is On Leave.")
+            return redirect("team:detail", pk=pk)
+        messages.warning(
+            request,
+            f"{self.member} is On Leave. Please give their {saints} Saint(s) to another caller.",
+        )
+        return redirect(f"{reverse('allocations:change')}?kind=move_all&from_caller={pk}")
+
+
+class TeamReturnView(MemberMixin, TemplateView):
+    """Back from leave: Saints stay with their new callers unless ticked to move back."""
+
+    template_name = "accounts/team_return.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(member=self.member, moved_away=team.saints_moved_during_leave(self.member))
+        return context
+
+    def post(self, request, pk):
+        ids = [int(v) for v in request.POST.getlist("move_back") if v.isdigit()]
+        try:
+            moved = team.end_leave(self.member, request.user, move_back=ids)
+        except team.TeamError as exc:
+            messages.error(request, str(exc))
+        else:
+            text = f"{self.member} is back from leave."
+            if moved:
+                text += f" {moved} Saint(s) moved back to them."
+            messages.success(request, text)
+        return redirect("team:detail", pk=pk)
+
+
+class PerformanceView(CoordinatorRequiredMixin, TemplateView):
+    """Callers sorted by calls attempted ÷ assigned over 1, 2 or 3 months."""
+
+    template_name = "accounts/performance.html"
+    PERIODS = (1, 2, 3)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        months = self.request.GET.get("months", "")
+        months = int(months) if months.isdigit() and int(months) in self.PERIODS else 1
+        members = team.team_members().filter(is_active=True)
+        perf = performance.performance(months, callers=members.values("pk"))
+        rows = []
+        for member in members:
+            row = perf.get(member.pk)
+            if row is None:
+                continue
+            rows.append({"user": member, "status": performance.team_status(member, row), **row})
+        rows.sort(key=lambda r: (-(r["completion_rate"] or 0), -r["assigned"], str(r["user"]).lower()))
+        start, today = performance.window(months)
+        context.update(
+            rows=rows,
+            months=months,
+            periods=self.PERIODS,
+            start=start,
+            threshold=settings.PARTIALLY_ACTIVE_BELOW,
+            without_calls=[m for m in members if m.pk not in perf],
+        )
+        return context

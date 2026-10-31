@@ -27,6 +27,7 @@
   --ems-accent-rgb: 15, 118, 110;
   --ems-accent-hover: #0b5f59;
   --ems-accent-soft: #e6f4f2;
+  --ems-chart: #0d9488;         /* chart bars; validated (dataviz) on the light surface */
   --ems-accent-text: #0b5f59;
   --ems-on-accent: #ffffff;
 
@@ -81,6 +82,7 @@
   --ems-accent-rgb: 20, 184, 166;
   --ems-accent-hover: #2dd4bf;
   --ems-accent-soft: rgba(20, 184, 166, 0.14);
+  --ems-chart: #11a698;         /* validated on the dark surface */
   --ems-accent-text: #5eead4;
   --ems-on-accent: #04201d;
 

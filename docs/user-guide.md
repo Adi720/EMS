@@ -1,7 +1,7 @@
 # EMS Seva — Quick start
 
 EMS Seva manages **Calling Seva**: the Saints met at the EMS stall, the callers who phone them, and
-each Sunday's **EMS Congregation** (shown as e.g. *EMS Congregation (1/11/26)*).
+each Sunday's **EMS Congregation** (shown as e.g. *EMS Congregation (1 Nov 2026)*).
 
 ## Which guide do I need?
 
@@ -33,5 +33,10 @@ each Sunday's **EMS Congregation** (shown as e.g. *EMS Congregation (1/11/26)*).
 ## Good to know
 - Callers only ever see their own Saints.
 - **Will Try** is never counted as a Yes; the latest result for each call counts.
-- Nothing is deleted: inactive Saints, deactivated callers and past weeks keep their history.
+- Saints added by mistake can be deleted (only if they have no call results); otherwise inactive
+  Saints, deactivated callers and past weeks keep their history.
+- New Saints stay **New** for 6 months after the stall date, then become **Active** by themselves.
+- Callers can **Raise Request** (Saint unable to attend, need a break, …); coordinators answer under
+  **Requests**.
+- No EMS this Sunday? Dashboard → **No Calling Sewa this week**.
 - 🌙/☀️ at the top switches light and dark theme.

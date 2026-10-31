@@ -15,7 +15,7 @@
         {% for b in object_list %}
         <tr>
           <td><a href="{% url 'imports:detail' b.pk %}">#{{ b.pk }} · {{ b.original_filename }}</a></td>
-          <td class="text-nowrap">{{ b.uploaded_at|date:"d M Y, H:i" }}<div class="small ems-muted">{{ b.uploaded_by }}</div></td>
+          <td class="text-nowrap">{{ b.uploaded_at|date:"j M Y, H:i" }}<div class="small ems-muted">{{ b.uploaded_by }}</div></td>
           <td><span class="badge text-bg-{% if b.status == 'committed' %}success{% elif b.status == 'staged' %}warning{% else %}secondary{% endif %}">{{ b.get_status_display }}</span></td>
           <td class="small">{% if b.summary.result %}{{ b.summary.result.created }} created · {{ b.summary.result.linked }} linked · {{ b.summary.result.skipped }} skipped{% else %}<span class="ems-muted">—</span>{% endif %}</td>
           <td class="text-end">{% if b.status == "staged" %}<a class="btn btn-sm btn-primary" href="{% url 'imports:detail' b.pk %}">Continue</a>{% else %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'imports:detail' b.pk %}">View</a>{% endif %}</td>

@@ -10,5 +10,8 @@ urlpatterns = [
     path("<int:pk>/", views.TeamDetailView.as_view(), name="detail"),
     path("<int:pk>/edit/", views.TeamEditView.as_view(), name="edit"),
     path("<int:pk>/password/", views.TeamPasswordView.as_view(), name="password"),
+    path("performance/", views.PerformanceView.as_view(), name="performance"),
+    path("<int:pk>/leave/", views.TeamLeaveView.as_view(), name="leave"),
+    path("<int:pk>/return/", views.TeamReturnView.as_view(), name="return"),
     path("<int:pk>/<str:action>/", views.TeamActiveView.as_view(), name="active"),
 ]

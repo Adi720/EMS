@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.calling",
     "apps.reports",
     "apps.imports",
+    "apps.caller_requests",
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,14 @@ MESSAGE_TAGS = {message_constants.ERROR: "danger"}
 PHONE_DEFAULT_REGION = env("PHONE_DEFAULT_REGION", default="IN")
 # Length of an allocation cycle, used to suggest the next cycle's dates.
 ALLOCATION_CYCLE_MONTHS = env.int("ALLOCATION_CYCLE_MONTHS", default=3)
+# Saints are "New" for this many months after their registration date, then Active.
+NEW_PERIOD_MONTHS = env.int("NEW_PERIOD_MONTHS", default=6)
+# Default length of an On Hold pause (next-call date).
+ON_HOLD_MONTHS = env.int("ON_HOLD_MONTHS", default=6)
+# A caller is "Partially Active" when they attempted fewer than this % of their calls
+# over the last PERFORMANCE_MONTHS month(s).
+PARTIALLY_ACTIVE_BELOW = env.int("PARTIALLY_ACTIVE_BELOW", default=75)
+PERFORMANCE_MONTHS = env.int("PERFORMANCE_MONTHS", default=1)
 # Show "rotation due" on the coordinator dashboard this many days before a cycle ends.
 ROTATION_REMINDER_DAYS = env.int("ROTATION_REMINDER_DAYS", default=14)
 # Workbook import limits.
@@ -155,6 +164,7 @@ REMINDER_AUTO_START = env.bool("REMINDER_AUTO_START", default=True)
 # --- Internationalisation -------------------------------------------------
 
 LANGUAGE_CODE = "en-gb"
+FORMAT_MODULE_PATH = ["config.formats"]
 TIME_ZONE = env("TIME_ZONE", default="Asia/Kolkata")
 USE_I18N = True
 USE_TZ = True

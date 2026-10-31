@@ -93,9 +93,7 @@ def test_cross_caller_recording_is_denied_but_coordinator_may(
     assert CallAttempt.objects.count() == 1
 
 
-def test_closed_session_withdrawn_task_and_do_not_call_block_attempts(
-    setup, make_session, record, coordinator
-):
+def test_closed_session_and_withdrawn_task_block_attempts(setup, make_session, record, coordinator):
     session = make_session()
     task_a, task_b = session.tasks.filter(contact__in=setup["mine"]).order_by("contact__full_name")
     change_status(
@@ -129,13 +127,13 @@ def test_inactive_withdraws_unattempted_keeps_attempted(setup, make_session, rec
     record(attempted, Outcome.YES)
     for contact in setup["mine"]:
         change_status(
-            contact, ContactStatus.DO_NOT_CALL, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
+            contact, ContactStatus.INACTIVE, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
         )
     attempted.refresh_from_db()
     untouched.refresh_from_db()
     assert attempted.status == TaskStatus.OPEN and attempted.latest_outcome == Outcome.YES
     assert untouched.status == TaskStatus.WITHDRAWN
-    assert "Do not call" in untouched.withdrawn_reason
+    assert "Inactive" in untouched.withdrawn_reason
 
 
 def test_caller_cannot_open_own_withdrawn_task(client, setup, make_session, caller, coordinator):
@@ -146,10 +144,10 @@ def test_caller_cannot_open_own_withdrawn_task(client, setup, make_session, call
     assert client.get(reverse("calling:task_detail", args=[task.pk])).status_code == 404
 
 
-def test_inactive_or_do_not_call_contacts_cannot_be_allocated(make_contact, caller, coordinator):
+def test_inactive_contacts_cannot_be_allocated(make_contact, caller, coordinator):
     from apps.allocations.services import AllocationError, assign_individual
 
-    for status in (ContactStatus.INACTIVE, ContactStatus.DO_NOT_CALL):
+    for status in (ContactStatus.INACTIVE,):
         contact = make_contact()
         change_status(contact, status, coordinator, reason_category=StatusReason.OTHER)
         with pytest.raises(AllocationError):
@@ -216,21 +214,6 @@ def test_quick_attempt_and_detail_form(client, setup, make_session, caller):
     assert task.attempt_count == 2  # invalid outcome rejected
 
 
-def test_do_not_call_phone_hidden_from_caller(client, setup, make_session, record, caller, coordinator):
-    session = make_session()
-    task = session.tasks.get(contact=setup["mine"][0])
-    record(task, Outcome.NOT_CONNECTED)
-    change_status(
-        task.contact, ContactStatus.DO_NOT_CALL, coordinator, reason_category=StatusReason.REQUESTED_NO_CALLS
-    )
-    client.force_login(caller)
-    phone = task.contact.phone_primary
-    for url in [reverse("core:caller_dashboard"), reverse("calling:task_detail", args=[task.pk])]:
-        content = client.get(url).content.decode()
-        assert phone not in content and task.contact.phone_display not in content
-        assert "Do not call" in content
-
-
 def test_session_management_is_coordinator_only(client, setup, make_session, caller):
     session = make_session()
     client.force_login(caller)
@@ -268,7 +251,7 @@ def test_coordinator_session_lifecycle_via_views(client, setup, coordinator):
 
 
 def test_congregation_label_format(make_session):
-    assert str(make_session(session_date=date(2026, 11, 1), opened=False)) == "EMS Congregation (1/11/26)"
+    assert str(make_session(session_date=date(2026, 11, 1), opened=False)) == "EMS Congregation (1 Nov 2026)"
 
 
 def test_next_sunday():

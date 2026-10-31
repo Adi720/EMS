@@ -11,24 +11,32 @@
       <div class="ems-nav__label">Calling</div>
       {% nav_is_active "calling" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'calling:session_list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "calendar2-check" %}<span>EMS Congregations</span></a>
+      {% nav_is_active "caller_requests:manage" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'caller_requests:manage' %}"{% if on %} aria-current="page"{% endif %}>{% icon "inbox" %}<span>Requests</span>{% if pending_requests %}<span class="badge rounded-pill text-bg-warning ms-auto" aria-label="{{ pending_requests }} waiting">{{ pending_requests }}</span>{% endif %}</a>
       {% if is_caller %}
         {% nav_is_active "core:caller_dashboard" as on %}
         <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:caller_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "telephone" %}<span>My calls</span></a>
+        {% nav_is_active "core:my_report" as on %}
+        <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:my_report' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart" %}<span>My Report</span></a>
+        {% nav_is_active "caller_requests:mine" as on %}
+        <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'caller_requests:mine' %}"{% if on %} aria-current="page"{% endif %}>{% icon "send" %}<span>Raise Request</span></a>
       {% endif %}
     </div>
     <div class="ems-nav__group">
       <div class="ems-nav__label">People</div>
       {% nav_is_active "contacts" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'contacts:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "people" %}<span>Saints</span></a>
-      {% nav_is_active "team" as on %}
-      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'team:list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "headset" %}<span>Team</span></a>
+      {% nav_is_active "team" as on %}{% nav_is_active "team:performance" as on_perf %}
+      <a class="ems-nav__link{% if on and not on_perf %} active{% endif %}" href="{% url 'team:list' %}"{% if on and not on_perf %} aria-current="page"{% endif %}>{% icon "headset" %}<span>Calling Team</span></a>
+      {% nav_is_active "team:performance" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'team:performance' %}"{% if on %} aria-current="page"{% endif %}>{% icon "graph-up" %}<span>Performance</span></a>
       {% nav_is_active "allocations" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'allocations:home' %}"{% if on %} aria-current="page"{% endif %}>{% icon "diagram-3" %}<span>Assignments</span></a>
     </div>
     <div class="ems-nav__group">
       <div class="ems-nav__label">Insights</div>
       {% nav_is_active "reports" as on %}
-      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'reports:monthly' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart-line" %}<span>Monthly reports</span></a>
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'reports:monthly' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart-line" %}<span>Reports</span></a>
       {% nav_is_active "audit" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'audit:event_list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "clock-history" %}<span>Audit log</span></a>
     </div>
@@ -41,6 +49,15 @@
     <div class="ems-nav__group">
       {% nav_is_active "core:caller_dashboard" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:caller_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "telephone" %}<span>My calls</span></a>
+      {% nav_is_active "core:my_report" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:my_report' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart" %}<span>My Report</span></a>
+      {% nav_is_active "caller_requests:mine" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'caller_requests:mine' %}"{% if on %} aria-current="page"{% endif %}>{% icon "send" %}<span>Raise Request</span></a>
+    </div>
+  {% elif is_stall_lead %}
+    <div class="ems-nav__group">
+      {% nav_is_active "contacts:stall_add" as on %}
+      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'contacts:stall_add' %}"{% if on %} aria-current="page"{% endif %}>{% icon "person-plus" %}<span>Add Saint</span></a>
     </div>
   {% endif %}
 </nav>

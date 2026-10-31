@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -21,11 +23,11 @@ from apps.audit.services import events_for, log_event
 from apps.calling.models import CallTask
 from apps.core.exports import export_response
 from apps.core.forms import BootstrapFormMixin, DateInput
-from apps.core.permissions import CoordinatorRequiredMixin
+from apps.core.permissions import CoordinatorRequiredMixin, StallLeadRequiredMixin
 from apps.core.phones import display_phone, phone_digits
 
 from . import services
-from .forms import ContactFilterForm, ContactForm, StatusChangeForm
+from .forms import ContactFilterForm, ContactForm, StallSaintForm, StatusChangeForm
 from .models import Contact, ContactStatus
 
 
@@ -72,6 +74,7 @@ class ContactListView(CoordinatorRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
+        services.promote_new_saints()
         qs, self.filter_form = filter_contacts(contact_queryset(), self.request.GET)
         return qs.order_by("full_name", "id")
 
@@ -134,6 +137,25 @@ class ContactCreateView(CoordinatorRequiredMixin, FormView):
             )
         messages.success(self.request, f"{contact} added to the Saints directory.")
         return redirect("contacts:detail", pk=contact.pk)
+
+
+class StallAddView(StallLeadRequiredMixin, FormView):
+    """Stall leads add new Saints (they then wait for a coordinator to give them a caller)."""
+
+    template_name = "contacts/stall_add.html"
+    form_class = StallSaintForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["recent"] = Contact.objects.filter(
+            created_by=self.request.user, created_at__date__gte=timezone.localdate() - timedelta(days=30)
+        ).order_by("-created_at")[:50]
+        return context
+
+    def form_valid(self, form):
+        contact = services.create_contact(form.contact_data(), self.request.user)
+        messages.success(self.request, f"Thank you — {contact} is added. A coordinator will assign a caller.")
+        return redirect("contacts:stall_add")
 
 
 class ContactUpdateView(CoordinatorRequiredMixin, FormView):
@@ -308,6 +330,8 @@ EXPORT_HEADERS = [
     "Area",
     "Registration date",
     "Qualification",
+    "Skills",
+    "Sewa",
     "Collected by",
     "Status",
     "Current caller",
@@ -315,13 +339,10 @@ EXPORT_HEADERS = [
 
 
 class ContactExportView(CoordinatorRequiredMixin, View):
-    """Contact list export. Do-not-call contacts are excluded unless explicitly included."""
+    """Saints list export with the current filters."""
 
     def get(self, request):
         qs, _ = filter_contacts(contact_queryset(), request.GET)
-        include_dnc = request.GET.get("include_dnc") == "1"
-        if not include_dnc:
-            qs = qs.exclude(status=ContactStatus.DO_NOT_CALL)
         qs = qs.order_by("full_name", "id")
         fmt = "xlsx" if request.GET.get("format") == "xlsx" else "csv"
         rows = [
@@ -332,6 +353,8 @@ class ContactExportView(CoordinatorRequiredMixin, View):
                 c.area,
                 c.registration_date,
                 c.qualification,
+                c.skills,
+                c.sewa,
                 c.collected_by_name,
                 c.get_status_display(),
                 caller_label(c),
@@ -342,7 +365,6 @@ class ContactExportView(CoordinatorRequiredMixin, View):
             request.user,
             "export.contacts",
             f"Exported {len(rows)} contacts ({fmt})",
-            include_dnc=include_dnc,
             filters={k: v for k, v in request.GET.items() if k != "format"},
         )
         filename = f"contacts-{timezone.localdate():%Y%m%d}"

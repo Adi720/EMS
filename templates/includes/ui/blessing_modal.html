@@ -1,0 +1,21 @@
+{% load ui %}{# Shown once a day after login; "Begin Sewa" marks it as seen for today. #}
+<div class="modal fade" id="blessingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="blessingTitle" aria-describedby="blessingText" data-show-on-load>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content ems-blessing">
+      <div class="modal-body text-center p-4">
+        <div class="ems-blessing__icon" aria-hidden="true">{% icon "flower1" %}</div>
+        <h2 class="h5 mb-3" id="blessingTitle">Before you begin your Sewa</h2>
+        <div id="blessingText">
+          <p class="mb-2">I am truly blessed to have this Sewa.</p>
+          <p class="mb-3">Thank you, Satguru Mataji, for blessing me with Sewa.</p>
+          <p class="fw-semibold mb-4">Please do Simran before starting the Sewa.</p>
+        </div>
+        <form method="post" action="{% url 'accounts:blessing_seen' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <button class="btn btn-primary btn-lg w-100" type="submit">{% icon "heart" %}Begin Sewa</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

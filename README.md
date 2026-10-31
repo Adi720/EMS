@@ -11,7 +11,7 @@ the initial workbook import.
   [system administrator](docs/system-administrator-guide.md) · [feature catalogue](docs/feature-catalogue.md)
 
 In the screens, each weekly Sunday EMS is called an **EMS Congregation**, shown as e.g.
-"EMS Congregation (1/11/26)". In the code it is the `EmsSession` model.
+"EMS Congregation (1 Nov 2026)". In the code it is the `EmsSession` model.
 
 > **Data rule:** never put real contact data (e.g. `2026 EMS DATA.xlsx`) under version control.
 > `*.xlsx` and `*.csv` are git-ignored. Development and tests use synthetic data only.
@@ -20,8 +20,9 @@ In the screens, each weekly Sunday EMS is called an **EMS Congregation**, shown 
 
 | Role | Main screens |
 |---|---|
-| Caller | **My calls**: the session's allocated contacts, pending first, tap-to-call, one-tap outcome (Yes / Not Possible / Will Try / Call Not Connected), notes and call-back time, own progress |
-| Coordinator | **Dashboard** (live progress by caller, session history), **Contacts** (search, lifecycle, history, export), **Allocations** (assign, move, swap, rotate with preview; cycles), **Sessions** (open/close, weekly report, exports), **Monthly** report, **Import**, **Audit** |
+| Caller | **My calls**: the session's allocated contacts, pending first, tap-to-call, one-tap outcome (Yes / Not Possible / Will Try / Call Not Connected), remarks and call-back time, own progress; **My Report** (own stats with chart); **Raise Request** |
+| Coordinator | **Dashboard** (live progress by caller, session history, No Calling Sewa this week), **Requests**, **Saints** (New / Active / On Hold / Inactive, search, history, export, delete), **Calling Team** (Active / Partially Active / On Leave / Inactive) and **Performance**, **Assignments** (assign, move, swap, rotate with preview; cycles), **EMS Congregations** (open/close, exports), **Reports** (weekly / monthly / 3 months), **Import**, **Audit** |
+| Stall Lead | **Add Saint** only (shared `stall.sewa.admin` login, `manage.py create_stall_lead`) |
 | System admin | Everything a coordinator can do, plus Django Admin for users and roles |
 
 ## Local setup on Windows (no Docker)
@@ -98,14 +99,14 @@ Run the tests against PostgreSQL before deploying:
 
 1. Log in as `demo.coordinator` → **Contacts → Add contact**: name, phone `98765 43210`, area,
    registration date; *Allocate to* `Demo Caller One`, allocation start today. Save.
-2. **Dashboard → Start calling for EMS Congregation (d/m/yy)** (the coming Sunday) — the
+2. **Dashboard → Start calling for EMS Congregation (date)** (the coming Sunday) — the
    message reports 1 contact added to the call lists.
 3. In a private window, log in as `demo.caller1` → **My calls**: the contact is listed as
    Pending with a call button. Tap **Will Try**, then open the contact and record **Yes** with a note.
 4. Back as coordinator → **Dashboard**: Assigned 1, Completed 1, Connected 1, Yes 1, Will Try 0,
    Unknown 0. Open the congregation (Details &amp; exports) → **Export → Per-caller summary (Excel)**.
-5. As coordinator, open the contact → **Change status** → *Do not call*. As the caller, reload:
-   the phone number is hidden and no outcome buttons are shown; the earlier attempt is kept.
+5. As coordinator, open the contact → **Change status** → *Inactive*. As the caller, reload:
+   the contact is no longer on the list as a pending call; the earlier attempt is kept.
 6. Try `http://127.0.0.1:8000/contacts/` as the caller → *Access denied*.
 7. **Audit** (coordinator) lists each of these actions.
 
@@ -133,6 +134,7 @@ message filled in) once calling is open — no setup needed.
 |---|---|
 | Caller | Django Admin → Users → add to the `Caller` group |
 | Coordinator | Add to the `Coordinator` group |
+| Stall Lead | `manage.py create_stall_lead` (or add a user to the `Stall Lead` group) |
 | System administrator | `is_staff` + `is_superuser` (has every coordinator capability) |
 
 Every page requires login; role pages return 403 and other callers' records 404. To unlock an

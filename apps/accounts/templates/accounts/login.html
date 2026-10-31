@@ -24,5 +24,5 @@
   </div>
   <button type="submit" class="btn btn-primary btn-lg w-100">Log in</button>
 </form>
-<p class="small ems-muted mt-3 mb-0 text-center">Forgotten your password? Ask your coordinator or system administrator to reset it.</p>
+<p class="small mt-3 mb-0 text-center"><a href="{% url 'accounts:password_reset' %}">Forgot password?</a></p>
 {% endblock %}

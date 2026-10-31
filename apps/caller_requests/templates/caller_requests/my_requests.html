@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Raise Request{% endblock %}
+{% block content %}
+<div class="ems-caller">
+  {% include "includes/ui/page_header.html" with title="Raise Request" subtitle="Tell your coordinator about a Saint — for example that they are unable to attend EMS — or anything else they should know." only %}
+
+  <form method="post" class="card card-body mb-4" novalidate>
+    {% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <button class="btn btn-primary w-100" type="submit">{% icon "send" %}Send request</button>
+  </form>
+
+  <h2 class="ems-section-title mb-2">My requests</h2>
+  {% if my_requests %}
+  <div class="card">
+    {% for item in my_requests %}
+    <div class="ems-saint-row">
+      <div class="min-w-0 flex-fill">
+        <div class="ems-saint-row__name">{{ item.get_kind_display }}</div>
+        <div class="ems-saint-row__meta">{% if item.contact_name %}{{ item.contact_name }} · {% endif %}{{ item.created_at|date:"j M Y" }}</div>
+        <div class="small text-wrap">{{ item.reason }}</div>
+        {% if item.decision_note %}<div class="small ems-muted text-wrap">{% icon "chat-left-text" %} {{ item.decision_note }}</div>{% endif %}
+      </div>
+      {% include "caller_requests/request_badge.html" %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    {% include "includes/ui/empty_state.html" with icon="send" title="No requests yet" text="Requests you send appear here with their answer." only %}
+  {% endif %}
+</div>
+{% endblock %}

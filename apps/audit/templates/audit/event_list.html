@@ -37,7 +37,7 @@
       <thead><tr><th style="width:7rem">Time</th><th>Activity</th><th>Who</th><th class="text-end"><span class="visually-hidden">Record</span></th></tr></thead>
       <tbody>
         {% for e in object_list %}
-        {% ifchanged %}<tr class="ems-day-row"><th colspan="4" scope="rowgroup">{{ e.created_at|date:"l, d F Y" }}</th></tr>{% endifchanged %}
+        {% ifchanged %}<tr class="ems-day-row"><th colspan="4" scope="rowgroup">{{ e.created_at|date:"l, j M Y" }}</th></tr>{% endifchanged %}
         <tr>
           <td class="ems-num ems-muted text-nowrap">{{ e.created_at|date:"H:i" }}</td>
           <td>

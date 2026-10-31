@@ -32,7 +32,7 @@ def scenario(make_contact, caller, caller2, allocate, make_session, record, coor
     # A4 not attempted; A5 withdrawn (do not call before calling)
     change_status(
         task["A5"].contact,
-        ContactStatus.DO_NOT_CALL,
+        ContactStatus.INACTIVE,
         coordinator,
         reason_category=StatusReason.REQUESTED_NO_CALLS,
     )
@@ -138,8 +138,8 @@ def test_session_exports(client, scenario, coordinator):
     response = client.get(url, {"kind": "tasks", "format": "xlsx"})
     sheet = load_workbook(io.BytesIO(response.content)).active
     names = [row[0].value for row in sheet.iter_rows(min_row=2)]
-    assert "A5" not in names  # do-not-call excluded by default
-    assert len(names) == 8
+    assert "A5" in names  # withdrawn calls are listed too, with their status
+    assert len(names) == 9
     assert "+91" not in str([[c.value for c in row] for row in sheet.iter_rows()])  # no phone numbers
     assert AuditEvent.objects.filter(action__startswith="export.session").count() == 2
 

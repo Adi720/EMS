@@ -153,3 +153,67 @@ def activate_caller(target, actor):
     target.is_active = True
     target.save(update_fields=["is_active"])
     log_event(actor, "team.activate", f"Reactivated {target}", target)
+
+
+# --- On Leave ------------------------------------------------------------------
+
+
+@transaction.atomic
+def start_leave(target, actor, *, reason=""):
+    """Mark a caller On Leave. Their Saints stay with them until a coordinator moves them;
+    the dashboard keeps reminding until that is done."""
+    target = User.objects.select_for_update().get(pk=target.pk)
+    if not target.is_active:
+        raise TeamError(f"{target} is deactivated.")
+    if target.is_on_leave:
+        raise TeamError(f"{target} is already On Leave.")
+    target.on_leave_since = timezone.localdate()
+    target.save(update_fields=["on_leave_since"])
+    log_event(actor, "team.leave_start", f"{target} is On Leave", target, reason=reason[:300])
+    return target
+
+
+def saints_moved_during_leave(target):
+    """Saints that were with ``target`` when the leave began and now have another caller."""
+    from apps.allocations.services import open_allocations
+
+    if not target.on_leave_since:
+        return []
+    from apps.allocations.models import Allocation
+
+    left = Allocation.objects.filter(
+        caller=target, effective_to__isnull=False, effective_to__gte=target.on_leave_since
+    ).values("contact")
+    return list(
+        open_allocations()
+        .filter(contact__in=left)
+        .exclude(caller=target)
+        .select_related("contact", "caller")
+        .order_by("contact__full_name")
+    )
+
+
+@transaction.atomic
+def end_leave(target, actor, *, move_back=()):
+    """Back from leave. By default the Saints stay with their new callers; the coordinator
+    may tick some (``move_back``: allocations from saints_moved_during_leave) to return."""
+    from apps.allocations.models import ChangeType
+    from apps.allocations.services import PlannedChange, apply_plan
+
+    target = User.objects.select_for_update().get(pk=target.pk)
+    if not target.is_on_leave:
+        raise TeamError(f"{target} is not On Leave.")
+    allowed = {a.pk: a for a in saints_moved_during_leave(target)}
+    chosen = [allowed[pk] for pk in move_back if pk in allowed]
+    if chosen:
+        apply_plan(
+            [PlannedChange(a.contact, a.caller, target) for a in chosen],
+            kind=ChangeType.ASSIGN,
+            effective_date=max([timezone.localdate(), *(a.effective_from for a in chosen)]),
+            actor=actor,
+            reason=f"{target} back from leave",
+        )
+    target.on_leave_since = None
+    target.save(update_fields=["on_leave_since"])
+    log_event(actor, "team.leave_end", f"{target} is back from leave", target, moved_back=len(chosen))
+    return len(chosen)

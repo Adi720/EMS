@@ -134,7 +134,7 @@ class Command(BaseCommand):
 
         change_status(
             contacts[3],
-            ContactStatus.TEMP_UNAVAILABLE,
+            ContactStatus.ON_HOLD,
             coordinator,
             reason_category=StatusReason.TEMPORARILY_AWAY,
             reason_text="Exams this month",
@@ -149,7 +149,7 @@ class Command(BaseCommand):
         )
         change_status(
             contacts[11],
-            ContactStatus.DO_NOT_CALL,
+            ContactStatus.INACTIVE,
             coordinator,
             reason_category=StatusReason.REQUESTED_NO_CALLS,
         )
