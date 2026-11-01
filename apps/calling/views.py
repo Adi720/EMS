@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -20,6 +20,7 @@ from . import services
 from .forms import AttemptForm, QuickAttemptForm, SessionForm
 from .models import (
     OUTCOME_HELP,
+    CallAttempt,
     CallTask,
     EmsSession,
     Outcome,
@@ -92,8 +93,13 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
         session_tasks = own.filter(session=session)
         show = self.request.GET.get("show", "")
         tasks = session_tasks.filter(TASK_FILTERS[show]) if show in TASK_FILTERS else session_tasks
-        tasks = tasks.select_related("contact").order_by(
-            "attempt_count" if show == "" else "contact__full_name", "contact__full_name"
+        latest_remark = CallAttempt.objects.filter(task_id=OuterRef("pk")).exclude(notes="").order_by(
+            "-attempted_at", "-pk"
+        )
+        tasks = (
+            tasks.select_related("contact")
+            .annotate(latest_remark=Subquery(latest_remark.values("notes")[:1]))
+            .order_by("attempt_count" if show == "" else "contact__full_name", "contact__full_name")
         )
         context.update(tasks=tasks, show=show, summary=metrics.summarize(session_tasks))
         return context
