@@ -93,8 +93,10 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
         session_tasks = own.filter(session=session)
         show = self.request.GET.get("show", "")
         tasks = session_tasks.filter(TASK_FILTERS[show]) if show in TASK_FILTERS else session_tasks
-        latest_remark = CallAttempt.objects.filter(task_id=OuterRef("pk")).exclude(notes="").order_by(
-            "-attempted_at", "-pk"
+        latest_remark = (
+            CallAttempt.objects.filter(task_id=OuterRef("pk"))
+            .exclude(notes="")
+            .order_by("-attempted_at", "-pk")
         )
         tasks = (
             tasks.select_related("contact")
