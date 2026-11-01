@@ -13,6 +13,7 @@ def test_my_calls_before_calling_starts_explains_why(client, caller, make_contac
     response = client.get(reverse("core:caller_dashboard"))
     content = response.content.decode()
     assert response.context["assigned_saints"] == 2
+    assert "{%" not in content and "{{" not in content
     assert "No calls to make yet" in content and "2 Saints" in content
     assert response.context["week_label"] in content
 
@@ -25,12 +26,29 @@ def test_my_calls_marks_current_result_and_all_done(
     task = session.tasks.get()
     client.force_login(caller)
     content = client.get(reverse("core:caller_dashboard")).content.decode()
-    assert "After the call, tap the result" in content and "All calls done" not in content
+    assert 'name="notes"' in content and ">Remarks</label>" in content
+    assert "{%" not in content and "{{" not in content
+    assert content.index('class="ems-outcomes mt-2"') < content.index('id="notes-')
+    assert 'class="ems-request-link ems-muted mt-2"' in content
+    assert "After the call, tap a result" not in content and "Set call-back time" not in content
+    assert "All calls done" not in content
     record(task, Outcome.WILL_TRY)
     content = client.get(reverse("core:caller_dashboard")).content.decode()
     assert "All calls done" in content
     assert 'ems-outcome--will_try is-current" aria-pressed="true"' in content
-    assert "Update the result" in content
+    assert "Update the result" not in content
+
+
+def test_my_calls_session_switcher_renders(client, caller, make_contact, allocate, make_session):
+    allocate(make_contact(), caller)
+    first = make_session()
+    make_session(session_date=first.session_date.replace(day=8))
+    client.force_login(caller)
+
+    content = client.get(reverse("core:caller_dashboard")).content.decode()
+
+    assert 'name="session"' in content
+    assert "Show congregation" in content
 
 
 def test_congregations_page_states(client, coordinator, caller, make_contact, allocate):

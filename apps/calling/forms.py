@@ -35,5 +35,10 @@ class AttemptForm(BootstrapFormMixin, forms.Form):
     )
 
 
-class QuickAttemptForm(forms.Form):
+class QuickAttemptForm(BootstrapFormMixin, forms.Form):
     outcome = forms.ChoiceField(choices=Outcome.choices)
+    notes = forms.CharField(
+        required=False,
+        max_length=1000,
+        widget=forms.Textarea(attrs={"rows": 1, "placeholder": "Add a remark..."}),
+    )

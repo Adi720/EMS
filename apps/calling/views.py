@@ -55,7 +55,6 @@ TASK_FILTERS = {
     "pending": Q(attempt_count=0),
     "completed": Q(attempt_count__gt=0),
     "not_connected": Q(latest_outcome=Outcome.NOT_CONNECTED),
-    "callback": Q(callback_at__isnull=False) & ~Q(latest_outcome__in=[Outcome.YES, Outcome.NOT_POSSIBLE]),
 }
 
 
@@ -206,11 +205,14 @@ class QuickAttemptView(RoleRequiredMixin, View):
         task = get_object_or_404(visible_tasks(request.user).select_related("contact"), pk=pk)
         form = QuickAttemptForm(request.POST)
         if not form.is_valid():
-            messages.error(request, "Choose one of the four outcomes.")
+            messages.error(request, "Choose a result and keep remarks to 1000 characters or fewer.")
         else:
             try:
                 attempt = services.record_attempt(
-                    task, outcome=form.cleaned_data["outcome"], actor=request.user
+                    task,
+                    outcome=form.cleaned_data["outcome"],
+                    notes=form.cleaned_data["notes"],
+                    actor=request.user,
                 )
             except services.CallingError as exc:
                 messages.error(request, str(exc))

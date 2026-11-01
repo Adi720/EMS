@@ -789,7 +789,15 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 .ems-call-card.is-done { background: color-mix(in srgb, var(--ems-surface) 70%, var(--ems-surface-2)); }
 .ems-call-card__name { font-size: 1.08rem; margin: 0 0 0.15rem; }
 .ems-call-card__name a { color: var(--ems-text); text-decoration: none; }
-.ems-call-btn { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.ems-call-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.ems-call-btn .bi { display: inline-flex; align-items: center; line-height: 1; }
 
 .ems-outcomes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
 @media (min-width: 576px) { .ems-outcomes { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -813,6 +821,31 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .ems-outcome .bi { font-size: 1.2rem; }
+.ems-outcome > .bi {
+  flex: 0 0 1.2em;
+  width: 1.2em;
+  display: block;
+  height: 1.2em;
+  line-height: 1;
+}
+.ems-outcome > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.3em;
+  line-height: 1.15;
+  text-align: center;
+}
+.ems-request-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+.ems-request-link:hover { text-decoration: underline; }
+.ems-request-link .bi { flex: 0 0 auto; line-height: 1; }
 .ems-outcome--yes .bi { color: var(--ems-success); }
 .ems-outcome--not_possible .bi { color: var(--ems-danger); }
 .ems-outcome--will_try .bi { color: var(--ems-info); }
@@ -896,10 +929,44 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 .ems-call-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 .ems-call-card .ems-call-btn { min-height: 46px; }
 @media (max-width: 575.98px) {
-  .ems-call-card { padding: 0.875rem; }
-  .ems-outcomes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem; }
-  .ems-outcome { min-height: 54px; padding: 0.35rem 0.15rem; font-size: 0.72rem; font-weight: 600; }
+  .ems-call-card { padding: 1rem; }
+  .ems-outcomes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; }
+  .ems-outcome { min-height: 58px; padding: 0.35rem 0.15rem; font-size: 0.72rem; font-weight: 600; }
   .ems-outcome .bi { font-size: 1.1rem; }
+}
+
+@media (max-width: 991.98px) {
+  .ems-caller-dashboard .ems-hero { padding: 1.2rem; }
+  .ems-caller-dashboard .ems-hero__greeting { font-size: 0.85rem; }
+  .ems-caller-dashboard .ems-hero__title { font-size: 1.2rem; }
+  .ems-caller-dashboard .ems-caller__counts { gap: 0.65rem; }
+  .ems-caller-dashboard .ems-caller__counts > div { padding: 0.7rem 0.25rem; }
+  .ems-caller-dashboard .ems-caller__counts span { font-size: 1.2rem; }
+  .ems-caller-dashboard .ems-chips--wrap { row-gap: 0.6rem; }
+  .ems-caller-dashboard .ems-call-card { padding: 1rem; }
+  .ems-caller-dashboard .ems-call-card__name { font-size: 1.02rem; }
+  .ems-caller-dashboard .ems-call-btn { font-size: 0.95rem; }
+  .ems-caller-dashboard .ems-call-btn .bi { font-size: 0.95em; }
+  .ems-caller-dashboard .ems-outcome {
+    display: grid;
+    grid-template-rows: 1.3rem minmax(2.3em, auto);
+    align-content: center;
+    justify-items: center;
+    gap: 0.2rem;
+    min-height: 72px;
+    padding: 0.4rem 0.2rem;
+    font-size: 0.72rem;
+  }
+  .ems-caller-dashboard .ems-outcome > .bi {
+    display: grid;
+    place-items: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  .ems-caller-dashboard .ems-outcome > span { height: auto; min-height: 2.3em; }
+  .ems-caller-dashboard .ems-quick-attempt__notes { min-height: 42px; }
 }
 
 /* Caller-by-caller progress as cards on phones */
@@ -965,7 +1032,7 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
   padding: 0.45rem 0.25rem; min-height: 56px; font-size: 0.72rem; font-weight: 600;
   color: var(--ems-muted); text-decoration: none;
 }
-.ems-tabbar__link .bi { font-size: 1.25rem; }
+.ems-tabbar__link .bi { font-size: 1.15rem; }
 .ems-tabbar__link.active { color: var(--ems-accent-text); }
 @media (max-width: 991.98px) { .has-tabbar .ems-content { padding-bottom: 5.5rem; } }
 
