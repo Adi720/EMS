@@ -8,6 +8,7 @@ from django.urls import NoReverseMatch, URLResolver, get_resolver, reverse
 PUBLIC_URL_NAMES = {
     "accounts:login",
     "core:healthz",
+    "core:manifest",
     "accounts:password_reset",
     "accounts:password_reset_done",
     "accounts:password_reset_confirm",

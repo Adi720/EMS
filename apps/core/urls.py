@@ -13,4 +13,5 @@ urlpatterns = [
     path("my-report/", MyReportView.as_view(), name="my_report"),
     path("coordinator/", CoordinatorDashboardView.as_view(), name="coordinator_dashboard"),
     path("healthz/", views.healthz, name="healthz"),
+    path("manifest.webmanifest", views.manifest, name="manifest"),
 ]

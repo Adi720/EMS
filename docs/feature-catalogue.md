@@ -82,6 +82,7 @@ Saints never log in.
 |---|---|
 | Light and dark theme | 🌙/☀️ button; remembered per device |
 | Works on phones, tablets and computers | Callers' screens are designed for phones |
+| **Install on a phone** like an app: EMS Seva icon, no address bar, no app store | From the browser menu; needs internet |
 | Callers only ever see their own Saints | Checked on the server for every page |
 | Login lock after 5 wrong passwords; sessions end after 2 hours idle | Unlock in Django Admin or by the administrator |
 | **Forgot password** by email reset link | Needs the user's email and email sending set up |

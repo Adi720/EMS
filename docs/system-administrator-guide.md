@@ -161,6 +161,10 @@ telling coordinators about new caller requests.
 
 ## 7. Updating the application
 
+Phones with EMS Seva installed get updates as soon as you **Reload**; nothing needs reinstalling.
+The icons are in `static/img/icons/`. If you replace them, keep the same file names and sizes and
+run `collectstatic`.
+
 On your computer: commit and `git push`. Then on the server:
 ```bash
 cd ~/SNM && git pull && .venv/bin/pip install -r requirements/base.txt \

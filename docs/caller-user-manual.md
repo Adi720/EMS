@@ -10,8 +10,13 @@ Sunday's EMS Congregation and recording what they said. It works best on your ph
 
 ![Login page](images/login.png)
 
-> **Tip:** add the page to your phone's home screen — in Chrome: ⋮ → *Add to Home screen*;
-> on iPhone Safari: Share → *Add to Home Screen*. It then opens like an app.
+**Install it on your phone** so it opens like an app, with its own **EMS Seva** icon and no address
+bar. You only do this once, and it is free:
+
+- **Android (Chrome):** open the link → ⋮ menu → **Install app** or **Add to Home screen**.
+- **iPhone (Safari, not Chrome):** open the link → **Share** → **Add to Home Screen** → **Add**.
+
+It needs internet and your login, like the website, and always shows the latest version.
 
 Forgotten your password? Tap **Forgot password?** on the login page and enter your email — a link
 to choose a new password arrives by email. (No email saved? Ask your coordinator to reset it.)
