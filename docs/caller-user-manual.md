@@ -101,7 +101,9 @@ tap a bar for its numbers), and a table of every congregation.
 
 - You only see **your own** Saints. Nobody else's list is visible to you, and yours is not visible
   to other callers.
-- Once your coordinator **closes calling** for the week, results can no longer be changed.
+- **Calling closes by itself** when the congregation's day has passed (for 8 Nov, from 9 Nov). The
+  Call and result buttons then disappear and your results are read-only. Your coordinator can also
+  close it earlier. If you still have results to enter, ask your coordinator to reopen calling.
 - Earlier weeks: if you have more than one congregation, use **Show congregation** at the top to
   look back (read-only).
 - **Change your password:** tap your initials at the top right → **Change password**.

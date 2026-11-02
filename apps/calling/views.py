@@ -63,6 +63,7 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
     template_name = "calling/caller_dashboard.html"
 
     def get_context_data(self, **kwargs):
+        services.close_finished_sessions()
         context = super().get_context_data(**kwargs)
         user = self.request.user
         own = CallTask.objects.filter(caller=user, status=TaskStatus.OPEN)
@@ -168,6 +169,7 @@ class TaskDetailView(RoleRequiredMixin, FormView):
             services.can_record(self.request.user, task)
             and task.session.status == SessionStatus.OPEN
             and not task.session.on_hold
+            and not task.session.is_finished()
             and task.status == TaskStatus.OPEN
         )
 
@@ -229,6 +231,7 @@ class SessionListView(CoordinatorRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
+        services.close_finished_sessions()
         return EmsSession.objects.all()
 
     def get_context_data(self, **kwargs):
@@ -299,6 +302,7 @@ class SessionDetailView(CoordinatorRequiredMixin, TemplateView):
     template_name = "calling/session_detail.html"
 
     def get_context_data(self, **kwargs):
+        services.close_finished_sessions()
         context = super().get_context_data(**kwargs)
         session = get_object_or_404(EmsSession, pk=kwargs["pk"])
         all_tasks = CallTask.objects.filter(session=session)
@@ -339,7 +343,10 @@ class SessionActionView(CoordinatorRequiredMixin, View):
         try:
             if action == "open":
                 _, totals = services.open_session(session, request.user)
-                messages.success(request, f"Calling is open for {session}. Call lists: {describe(totals)}.")
+                text = f"Calling is open for {session}. Call lists: {describe(totals)}."
+                if session.session_date < timezone.localdate():
+                    text += " This congregation has passed, so calling closes again at the end of today."
+                messages.success(request, text)
             elif action == "close":
                 services.close_session(session, request.user)
                 messages.success(request, f"Calling closed for {session}. Counts are now final.")

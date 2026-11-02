@@ -12,7 +12,7 @@ from apps.allocations.services import rotation_due, unallocated_active_contacts
 from apps.audit.services import log_event
 from apps.calling import reminders
 from apps.calling.models import CallTask, EmsSession, Outcome, TaskStatus, congregation_label
-from apps.calling.services import next_sunday
+from apps.calling.services import close_finished_sessions, next_sunday
 from apps.calling.views import default_session
 from apps.contacts.models import Contact, ContactStatus
 from apps.contacts.services import promote_new_saints
@@ -42,6 +42,7 @@ class CoordinatorDashboardView(CoordinatorRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         promote_new_saints()
+        close_finished_sessions()
         context = super().get_context_data(**kwargs)
         params = self.request.GET
         sessions = list(EmsSession.objects.all())

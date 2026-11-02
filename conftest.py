@@ -1,10 +1,11 @@
 """Shared pytest fixtures. All users and contacts are synthetic."""
 
 import itertools
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from django.contrib.auth.models import Group
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.accounts.roles import Role
@@ -12,6 +13,21 @@ from apps.accounts.roles import Role
 PASSWORD = "Synthetic-pass-2026"
 ALLOCATION_START = date(2026, 1, 1)
 SESSION_DATE = date(2026, 11, 1)
+# Tests run on a fixed day so congregation dates never drift into the past.
+TODAY = datetime(2026, 10, 31, 6, 30, tzinfo=UTC)  # Saturday, midday in India
+
+
+@pytest.fixture(autouse=True)
+def clock(monkeypatch):
+    """Freezes Django's clock. ``clock(date)`` moves it to midday on that date."""
+
+    def move(day):
+        moment = datetime(day.year, day.month, day.day, 6, 30, tzinfo=UTC)
+        monkeypatch.setattr(timezone, "now", lambda: moment)
+
+    move(TODAY.date())
+    return move
+
 
 _phone_numbers = itertools.count(1)
 

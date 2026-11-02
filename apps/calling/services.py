@@ -143,6 +143,8 @@ def open_session(session, actor):
     session.status = SessionStatus.OPEN
     session.opened_at = timezone.now()
     session.closed_at = None
+    today = timezone.localdate()
+    session.late_until = today if session.session_date < today else None
     session.save()
     totals = generate_session_tasks(session, actor)
     action = "session.reopen" if previous == SessionStatus.CLOSED else "session.open"
@@ -160,6 +162,17 @@ def close_session(session, actor):
     session.save()
     log_event(actor, "session.close", f"Closed {session}", session)
     return session
+
+
+def close_finished_sessions(today=None):
+    """Close calling for congregations whose day has passed. Safe to call often."""
+    today = today or timezone.localdate()
+    finished = [
+        s
+        for s in EmsSession.objects.filter(status=SessionStatus.OPEN, session_date__lt=today)
+        if s.is_finished(today)
+    ]
+    return [close_session(session, None) for session in finished]
 
 
 @transaction.atomic
@@ -218,6 +231,8 @@ def record_attempt(task, *, outcome, actor, notes="", callback_at=None):
         raise CallingError("Calling is not open for this congregation.")
     if task.session.on_hold:
         raise CallingError("There is no Calling Sewa this week; results cannot be recorded.")
+    if task.session.is_finished():
+        raise CallingError(f"{task.session.label} has finished, so calling is closed.")
     if task.status != TaskStatus.OPEN:
         raise CallingError("This task has been withdrawn.")
 

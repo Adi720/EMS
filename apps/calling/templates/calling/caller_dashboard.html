@@ -32,7 +32,7 @@
       <div class="min-w-0">
         <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
         <h1 class="ems-hero__title mb-1" id="calls-title">{{ session.label }}</h1>
-        <div class="small ems-muted">{% if session.on_hold %}No Calling Sewa this week{% elif session.is_open %}Calling is open{% else %}{{ session.get_status_display }} — results are read-only{% endif %}</div>
+        <div class="small ems-muted">{% if session.on_hold %}No Calling Sewa this week{% elif session.is_open %}Calling is open{% else %}Calling is closed — results are read-only{% endif %}</div>
       </div>
       {% if sessions|length > 1 %}
       <form method="get" class="ems-caller__switch">
@@ -78,8 +78,8 @@
         {% include "includes/ui/outcome_badge.html" with task=task only %}
       </div>
 
-        <a class="btn btn-primary w-100 mt-2 ems-call-btn" href="tel:{{ task.contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ task.contact.phone_display }}</a>
         {% if session.is_open and not session.on_hold %}
+          <a class="btn btn-primary w-100 mt-2 ems-call-btn" href="tel:{{ task.contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ task.contact.phone_display }}</a>
           <div class="small ems-muted mt-2 mb-1">{% if task.attempt_count %}Update the result{% else %}After the call, tap the result{% endif %}</div>
           <div class="ems-outcomes">
             {% for value, label in outcomes %}

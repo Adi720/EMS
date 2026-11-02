@@ -59,6 +59,9 @@ class EmsSession(models.Model):
     # "No Calling Sewa this week": calling cannot start, nothing can be recorded, no reminders.
     on_hold = models.BooleanField("No calling this week", default=False)
     hold_note = models.CharField(max_length=200, blank=True)
+    # Calling ends when the congregation's day has passed. Reopening a finished congregation
+    # allows late results until the end of the day it was reopened.
+    late_until = models.DateField(null=True, blank=True)
     # Empty when created automatically by the Saturday reminder job.
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
@@ -89,6 +92,11 @@ class EmsSession(models.Model):
     @property
     def is_open(self):
         return self.status == SessionStatus.OPEN
+
+    def is_finished(self, today=None):
+        """The congregation's day has passed and no late results are allowed."""
+        today = today or timezone.localdate()
+        return self.session_date < today and not (self.late_until and self.late_until >= today)
 
 
 class CallTask(models.Model):

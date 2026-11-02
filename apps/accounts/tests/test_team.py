@@ -9,6 +9,7 @@ from apps.allocations.models import ChangeType
 from apps.allocations.services import current_allocation, unallocated_active_contacts
 from apps.audit.models import AuditEvent
 from apps.calling.models import Outcome, TaskStatus
+from apps.calling.services import next_sunday
 
 NEW_CALLER = {
     "first_name": "Nisha",
@@ -120,7 +121,7 @@ def test_deactivation_leaves_saints_unassigned_and_keeps_history(
     saints = [make_contact() for _ in range(2)]
     for contact in saints:
         allocate(contact, caller)
-    session = make_session()
+    session = make_session(session_date=next_sunday())  # still to come when they are deactivated
     attempted, untouched = (session.tasks.get(contact=c) for c in saints)
     record(attempted, Outcome.YES)
 

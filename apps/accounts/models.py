@@ -45,5 +45,16 @@ class User(AbstractUser):
         return self.on_leave_since is not None
 
     @property
+    def role_label(self):
+        """Every role the person holds, e.g. "Caller · Stall Lead"."""
+        coordinator = "System administrator" if self.is_superuser else "Coordinator"
+        roles = [
+            (self.is_coordinator, coordinator),
+            (self.is_caller, "Caller"),
+            (self.is_stall_lead, "Stall Lead"),
+        ]
+        return " · ".join(label for held, label in roles if held)
+
+    @property
     def has_any_role(self):
         return self.is_caller or self.is_coordinator or self.is_stall_lead

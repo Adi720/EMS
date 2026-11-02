@@ -15,7 +15,7 @@
       <form method="post" action="{% url 'calling:session_action' session.pk 'refresh' %}">{% csrf_token %}<button class="btn btn-outline-secondary" title="Add Saints assigned since calling started">{% icon "arrow-clockwise" %}Refresh call lists</button></form>
       <form method="post" action="{% url 'calling:session_action' session.pk 'close' %}" onsubmit="return confirm('Close calling for this congregation? Callers will no longer be able to record results.');">{% csrf_token %}<button class="btn btn-outline-danger">{% icon "lock" %}Close calling</button></form>
     {% else %}
-      <form method="post" action="{% url 'calling:session_action' session.pk 'open' %}" onsubmit="return confirm('Reopen calling for this congregation?');">{% csrf_token %}<button class="btn btn-outline-secondary">{% icon "unlock" %}Reopen calling</button></form>
+      <form method="post" action="{% url 'calling:session_action' session.pk 'open' %}" onsubmit="return confirm('Reopen calling for this congregation? If its day has passed, callers can add late results until the end of today.');">{% csrf_token %}<button class="btn btn-outline-secondary">{% icon "unlock" %}Reopen calling</button></form>
     {% endif %}
     <a class="btn btn-outline-secondary" href="{% url 'calling:session_edit' session.pk %}">{% icon "pencil" %}Edit</a>
     <div class="dropdown">

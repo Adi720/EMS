@@ -11,7 +11,7 @@
     <aside class="ems-sidebar d-none d-lg-flex" aria-label="Sidebar">
       <a class="ems-brand" href="{% url 'core:home' %}">{% include "includes/ui/brand.html" %}</a>
       {% include "includes/ui/nav.html" %}
-      <div class="ems-sidebar__footer">{% if is_coordinator %}Coordinator{% if is_caller %} · Caller{% endif %}{% elif is_caller %}Caller{% elif is_stall_lead %}Stall Lead{% endif %}</div>
+      <div class="ems-sidebar__footer">{{ user.role_label }}</div>
     </aside>
 
     <div class="offcanvas offcanvas-start ems-offcanvas d-lg-none" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
@@ -38,7 +38,7 @@
               {% icon "chevron-down" extra_class="small ems-muted d-none d-sm-inline" %}
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
-              <li><h6 class="dropdown-header">{{ user|display_name }}<br><span class="fw-normal">{% if user.is_superuser %}System administrator{% elif is_coordinator %}Coordinator{% elif is_caller %}Caller{% elif is_stall_lead %}Stall Lead{% endif %}</span></h6></li>
+              <li><h6 class="dropdown-header">{{ user|display_name }}<br><span class="fw-normal">{{ user.role_label }}</span></h6></li>
               <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">{% icon "key" %}Change password</a></li>
               {% if user.is_superuser %}<li><a class="dropdown-item" href="{% url 'admin:index' %}">{% icon "shield-lock" %}Django Admin</a></li>{% endif %}
               <li><hr class="dropdown-divider"></li>
@@ -72,6 +72,7 @@
     {% nav_is_active "core:caller_dashboard" as on %}<a class="ems-tabbar__link{% if on %} active{% endif %}" href="{% url 'core:caller_dashboard' %}"{% if on %} aria-current="page"{% endif %}>{% icon "telephone" %}<span>My calls</span></a>
     {% nav_is_active "core:my_report" as on %}<a class="ems-tabbar__link{% if on %} active{% endif %}" href="{% url 'core:my_report' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart" %}<span>My Report</span></a>
     {% nav_is_active "caller_requests:mine" as on %}<a class="ems-tabbar__link{% if on %} active{% endif %}" href="{% url 'caller_requests:mine' %}"{% if on %} aria-current="page"{% endif %}>{% icon "send" %}<span>Request</span></a>
+    {% if is_stall_lead %}{% nav_is_active "contacts:stall_add" as on %}<a class="ems-tabbar__link{% if on %} active{% endif %}" href="{% url 'contacts:stall_add' %}"{% if on %} aria-current="page"{% endif %}>{% icon "person-plus" %}<span>Add Saint</span></a>{% endif %}
   </nav>
   {% endif %}
   {% if show_blessing %}{% include "includes/ui/blessing_modal.html" %}{% endif %}

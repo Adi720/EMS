@@ -137,7 +137,8 @@ The whole database is **one file**: `~/SNM/db.sqlite3`.
 ## 6. Saturday reminder emails (optional)
 
 `manage.py weekly_reminders` runs once a day. Every day it turns New Saints into Active ones after
-6 months. On the reminder day (Saturday) it starts that week's calling (unless
+6 months and closes calling for congregations whose day has passed (the app also does this whenever
+someone opens the dashboard or My calls). On the reminder day (Saturday) it starts that week's calling (unless
 `REMINDER_AUTO_START=False` or a coordinator chose **No Calling Sewa this week**) and emails each
 caller who has an email address their link and number of Saints — once per congregation, so
 running it twice is harmless. The same email settings are used for **Forgot password** and for

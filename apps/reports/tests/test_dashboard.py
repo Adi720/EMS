@@ -1,9 +1,8 @@
 """Coordinator dashboard states, setup checklist and the new application shell."""
 
-from datetime import date
-
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.calling.services import close_session, next_sunday
 from apps.core.templatetags.ui import initials, percent
@@ -126,4 +125,4 @@ def test_week_label_is_coming_sunday(coord_client):
     assert coord_client.get(DASHBOARD).context["week_label"] == (
         f"EMS Congregation ({sunday.day} {sunday:%b %Y})"
     )
-    assert sunday.weekday() == 6 and sunday >= date.today()
+    assert sunday.weekday() == 6 and sunday >= timezone.localdate()

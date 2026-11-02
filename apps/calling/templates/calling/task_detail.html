@@ -17,8 +17,12 @@
     </div>
     {% include "includes/ui/outcome_badge.html" with task=task only %}
   </div>
+  {% if can_record %}
     <a class="btn btn-primary btn-lg w-100 mt-3 ems-call-btn" href="tel:{{ contact.phone_primary }}">{% icon "telephone-fill" %}Call {{ contact.phone_display }}</a>
     {% if contact.phone_secondary %}<a class="btn btn-outline-secondary w-100 mt-2" href="tel:{{ contact.phone_secondary }}">{% icon "telephone" %}Alternate number {{ contact.phone_secondary_display }}</a>{% endif %}
+  {% elif task.status != "withdrawn" %}
+    <div class="alert alert-secondary mt-3 mb-0">{% icon "lock" %}<div class="alert-body">Calling is closed for this congregation; this is for reference only.</div></div>
+  {% endif %}
   {% if task.status == "withdrawn" %}<div class="alert alert-secondary mt-3 mb-0">{% icon "info-circle" %}<div class="alert-body">Withdrawn: {{ task.withdrawn_reason }}</div></div>{% endif %}
   {% if request.user.is_coordinator %}<a class="small d-inline-block mt-3" href="{% url 'contacts:detail' contact.pk %}">{% icon "person-vcard" %} Full Saint record</a>{% endif %}
 </section>

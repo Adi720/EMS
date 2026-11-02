@@ -53,6 +53,10 @@
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'core:my_report' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart" %}<span>My Report</span></a>
       {% nav_is_active "caller_requests:mine" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'caller_requests:mine' %}"{% if on %} aria-current="page"{% endif %}>{% icon "send" %}<span>Raise Request</span></a>
+      {% if is_stall_lead %}
+        {% nav_is_active "contacts:stall_add" as on %}
+        <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'contacts:stall_add' %}"{% if on %} aria-current="page"{% endif %}>{% icon "person-plus" %}<span>Add Saint</span></a>
+      {% endif %}
     </div>
   {% elif is_stall_lead %}
     <div class="ems-nav__group">

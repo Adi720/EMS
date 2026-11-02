@@ -412,4 +412,6 @@ These decisions replace the earlier rules above where they differ.
 - **Stall Lead** role with one shared login (`stall.sewa.admin`) that can only add Saints; the
   name of the person adding is compulsory.
 - **Forgot password** by email reset link.
+- **Calling closes by itself** at midnight (local time) after the congregation's date. Reopening a
+  finished congregation allows late results until the end of that day.
 - Not done yet (skipped for now): two-factor login, automated backups, the Sewa Bhav page.

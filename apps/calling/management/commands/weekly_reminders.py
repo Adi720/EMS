@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from apps.calling.reminders import send_weekly_reminders
-from apps.calling.services import CallingError
+from apps.calling.services import CallingError, close_finished_sessions
 from apps.contacts.services import promote_new_saints
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -26,6 +26,8 @@ class Command(BaseCommand):
         promoted = promote_new_saints(today)
         if promoted:
             self.stdout.write(f"{promoted} New Saint(s) are now Active.")
+        for session in close_finished_sessions(today):
+            self.stdout.write(f"Calling closed for {session} (the day has passed).")
         if today.weekday() != settings.REMINDER_WEEKDAY and not force:
             self.stdout.write(f"Today is not {DAYS[settings.REMINDER_WEEKDAY]}; nothing to do.")
             return

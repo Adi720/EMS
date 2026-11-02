@@ -8,6 +8,11 @@ from conftest import PASSWORD
 LOGIN_URL = reverse("accounts:login")
 
 
+@pytest.fixture(autouse=True)
+def clock():
+    """django-axes reads the real time, so the login tests don't freeze the clock."""
+
+
 def login(client, username, password=PASSWORD, **extra):
     return client.post(LOGIN_URL, {"username": username, "password": password, **extra})
 
