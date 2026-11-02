@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -59,8 +61,8 @@ class EmsSession(models.Model):
     # "No Calling Sewa this week": calling cannot start, nothing can be recorded, no reminders.
     on_hold = models.BooleanField("No calling this week", default=False)
     hold_note = models.CharField(max_length=200, blank=True)
-    # Calling ends when the congregation's day has passed. Reopening a finished congregation
-    # allows late results until the end of the day it was reopened.
+    # Calling ends at CALLING_ENDS_AT on the congregation's day. Reopening after that allows
+    # late results until the end of the day it was reopened.
     late_until = models.DateField(null=True, blank=True)
     # Empty when created automatically by the Saturday reminder job.
     created_by = models.ForeignKey(
@@ -93,10 +95,16 @@ class EmsSession(models.Model):
     def is_open(self):
         return self.status == SessionStatus.OPEN
 
-    def is_finished(self, today=None):
-        """The congregation's day has passed and no late results are allowed."""
-        today = today or timezone.localdate()
-        return self.session_date < today and not (self.late_until and self.late_until >= today)
+    @property
+    def calling_ends_at(self):
+        return timezone.make_aware(datetime.combine(self.session_date, settings.CALLING_ENDS_AT))
+
+    def is_finished(self, now=None):
+        """Calling time is over and no late results are allowed."""
+        now = now or timezone.now()
+        if self.late_until and self.late_until >= timezone.localdate(now):
+            return False
+        return now >= self.calling_ends_at
 
 
 class CallTask(models.Model):

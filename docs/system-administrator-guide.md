@@ -122,6 +122,7 @@ Data lives in the server's database; anything imported on a laptop stays on that
 | `REMINDER_WEEKDAY` / `REMINDER_AUTO_START` | `5` (Saturday) / `True` | Reminder job (section 6) |
 | `NEW_PERIOD_MONTHS` | `6` | Months after the stall date that a Saint stays **New** |
 | `ON_HOLD_MONTHS` | `6` | Default next call date for **On Hold** |
+| `CALLING_ENDS_AT` | `11:00` | Local time calling stops on the congregation's day (24-hour) |
 | `PARTIALLY_ACTIVE_BELOW` / `PERFORMANCE_MONTHS` | `75` / `1` | A caller below this % of calls made over this many months is **Partially Active** |
 
 After changing `.env`, click **Reload** on the Web tab.
@@ -137,8 +138,8 @@ The whole database is **one file**: `~/SNM/db.sqlite3`.
 ## 6. Saturday reminder emails (optional)
 
 `manage.py weekly_reminders` runs once a day. Every day it turns New Saints into Active ones after
-6 months and closes calling for congregations whose day has passed (the app also does this whenever
-someone opens the dashboard or My calls). On the reminder day (Saturday) it starts that week's calling (unless
+6 months and closes calling for congregations whose calling time is over (the app also does this whenever
+someone opens the dashboard or My calls, and refuses late results from 11:00 AM regardless). On the reminder day (Saturday) it starts that week's calling (unless
 `REMINDER_AUTO_START=False` or a coordinator chose **No Calling Sewa this week**) and emails each
 caller who has an email address their link and number of Saints — once per congregation, so
 running it twice is harmless. The same email settings are used for **Forgot password** and for

@@ -35,7 +35,7 @@
       <div class="min-w-0">
         <div class="ems-hero__greeting">{% greeting %}, {{ user.first_name|default:user.username }}</div>
         <h1 class="ems-hero__title mb-1" id="calls-title">{{ session.label }}</h1>
-        <div class="small ems-muted">{% if session.on_hold %}No Calling Sewa this week{% elif session.is_open %}Calling is open{% else %}Calling is closed — results are read-only{% endif %}</div>
+        <div class="small ems-muted">{% if session.on_hold %}No Calling Sewa this week{% elif session.is_open %}{% if session.late_until %}Calling is open for late results until the end of today{% else %}Please call by {{ session.calling_ends_at|date:"D j M Y, g:i A" }}{% endif %}{% else %}Calling is closed — results are read-only{% endif %}</div>
       </div>
       {% if sessions|length > 1 %}
       <form method="get" class="ems-caller__switch">

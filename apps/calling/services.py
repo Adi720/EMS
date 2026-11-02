@@ -143,8 +143,9 @@ def open_session(session, actor):
     session.status = SessionStatus.OPEN
     session.opened_at = timezone.now()
     session.closed_at = None
-    today = timezone.localdate()
-    session.late_until = today if session.session_date < today else None
+    session.late_until = None
+    if session.is_finished():
+        session.late_until = timezone.localdate()
     session.save()
     totals = generate_session_tasks(session, actor)
     action = "session.reopen" if previous == SessionStatus.CLOSED else "session.open"
@@ -164,13 +165,15 @@ def close_session(session, actor):
     return session
 
 
-def close_finished_sessions(today=None):
-    """Close calling for congregations whose day has passed. Safe to call often."""
-    today = today or timezone.localdate()
+def close_finished_sessions(now=None):
+    """Close calling for congregations whose calling time is over. Safe to call often."""
+    now = now or timezone.now()
     finished = [
         s
-        for s in EmsSession.objects.filter(status=SessionStatus.OPEN, session_date__lt=today)
-        if s.is_finished(today)
+        for s in EmsSession.objects.filter(
+            status=SessionStatus.OPEN, session_date__lte=timezone.localdate(now)
+        )
+        if s.is_finished(now)
     ]
     return [close_session(session, None) for session in finished]
 
@@ -232,7 +235,7 @@ def record_attempt(task, *, outcome, actor, notes="", callback_at=None):
     if task.session.on_hold:
         raise CallingError("There is no Calling Sewa this week; results cannot be recorded.")
     if task.session.is_finished():
-        raise CallingError(f"{task.session.label} has finished, so calling is closed.")
+        raise CallingError(f"Calling has ended for {task.session.label}.")
     if task.status != TaskStatus.OPEN:
         raise CallingError("This task has been withdrawn.")
 

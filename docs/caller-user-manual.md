@@ -101,7 +101,7 @@ tap a bar for its numbers), and a table of every congregation.
 
 - You only see **your own** Saints. Nobody else's list is visible to you, and yours is not visible
   to other callers.
-- **Calling closes by itself** when the congregation's day has passed (for 8 Nov, from 9 Nov). The
+- **Calling closes by itself at 11:00 AM on Sunday**; My calls shows the time. The
   Call and result buttons then disappear and your results are read-only. Your coordinator can also
   close it earlier. If you still have results to enter, ask your coordinator to reopen calling.
 - Earlier weeks: if you have more than one congregation, use **Show congregation** at the top to

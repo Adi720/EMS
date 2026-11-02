@@ -26,8 +26,8 @@ class Command(BaseCommand):
         promoted = promote_new_saints(today)
         if promoted:
             self.stdout.write(f"{promoted} New Saint(s) are now Active.")
-        for session in close_finished_sessions(today):
-            self.stdout.write(f"Calling closed for {session} (the day has passed).")
+        for session in close_finished_sessions():
+            self.stdout.write(f"Calling closed for {session} (calling time is over).")
         if today.weekday() != settings.REMINDER_WEEKDAY and not force:
             self.stdout.write(f"Today is not {DAYS[settings.REMINDER_WEEKDAY]}; nothing to do.")
             return

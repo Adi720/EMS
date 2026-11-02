@@ -352,10 +352,10 @@ class SessionActionView(CoordinatorRequiredMixin, View):
         session = get_object_or_404(EmsSession, pk=pk)
         try:
             if action == "open":
-                _, totals = services.open_session(session, request.user)
+                session, totals = services.open_session(session, request.user)
                 text = f"Calling is open for {session}. Call lists: {describe(totals)}."
-                if session.session_date < timezone.localdate():
-                    text += " This congregation has passed, so calling closes again at the end of today."
+                if session.late_until:
+                    text += " Calling time has passed, so it closes again at the end of today."
                 messages.success(request, text)
             elif action == "close":
                 services.close_session(session, request.user)

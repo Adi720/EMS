@@ -19,7 +19,7 @@ each Sunday's **EMS Congregation** (shown as e.g. *EMS Congregation (1 Nov 2026)
 | Saturday morning | Coordinator | Dashboard → **Start calling for EMS Congregation (date)**, then **Share reminder on WhatsApp** |
 | Saturday | Callers | **My calls** → **📞 Call** → tap **Yes**, **Not Possible**, **Will Try** or **Call Not Connected** |
 | During the day | Coordinator | Dashboard shows progress for every caller |
-| After Sunday | Coordinator | Calling closes by itself when the day has passed. Congregation page → **Export** results if needed |
+| After Sunday | Coordinator | Calling closes by itself at 11:00 AM on Sunday. Congregation page → **Export** results if needed |
 
 ## Getting started (once)
 

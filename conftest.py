@@ -19,10 +19,12 @@ TODAY = datetime(2026, 10, 31, 6, 30, tzinfo=UTC)  # Saturday, midday in India
 
 @pytest.fixture(autouse=True)
 def clock(monkeypatch):
-    """Freezes Django's clock. ``clock(date)`` moves it to midday on that date."""
+    """Freezes Django's clock. ``clock(date)`` moves it to midday in India on that date;
+    ``clock(date, hour, minute)`` to that local time."""
 
-    def move(day):
-        moment = datetime(day.year, day.month, day.day, 6, 30, tzinfo=UTC)
+    def move(day, hour=12, minute=0):
+        local = timezone.make_aware(datetime(day.year, day.month, day.day, hour, minute))
+        moment = local.astimezone(UTC)
         monkeypatch.setattr(timezone, "now", lambda: moment)
 
     move(TODAY.date())

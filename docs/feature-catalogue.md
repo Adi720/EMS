@@ -33,7 +33,7 @@ Saints never log in.
 | **Share reminder on WhatsApp** / copy the reminder message | Coordinator | Dashboard |
 | Optional automatic **Saturday reminder email** to every caller | System administrator sets it up | Server scheduled task |
 | Live progress per caller, connected vs not connected, Yes / Not Possible / Will Try / Unknown | Coordinator | Dashboard, congregation page |
-| **Calling closes by itself** when the congregation's day has passed; callers can no longer call or record | Automatic | — |
+| **Calling closes by itself at 11:00 AM** on the congregation's day; callers can no longer call or record | Automatic | — |
 | Refresh call lists, close early, reopen for late results (until the end of that day), add an extra date or venue | Coordinator | EMS Congregations |
 
 ### Saints

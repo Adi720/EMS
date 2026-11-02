@@ -175,11 +175,11 @@ when the current cycle is ending.
 | Straight after | **Share reminder on WhatsApp** → choose your seva group → send. (If the administrator set up reminder emails, callers also get an email.) |
 | During the day | Watch the **Dashboard**: completed, pending and results for each caller. Remind anyone who is behind. |
 | New Saint added during the week | They are added to their caller's list automatically. **Refresh call lists** on the congregation page catches anything missed. |
-| After Sunday | **Calling closes by itself** at midnight after the congregation's day (for 8 Nov, callers can no longer call or record results from 9 Nov). Open the congregation → **Export** the summary or the call list if you need it. |
+| After Sunday | **Calling closes by itself at 11:00 AM on Sunday** (for 8 Nov, callers can no longer call or record results from 11:00 AM that day). Open the congregation → **Export** the summary or the call list if you need it. |
 
 On a congregation's page you can also **Close calling** early (callers can no longer change
-results), **Reopen calling**, and **Edit**. If a caller still has results to enter after the day has
-passed, **Reopen calling** lets them add late results until the end of that day; it then closes again. **Add another date** is only for an extra congregation or a
+results), **Reopen calling**, and **Edit**. If a caller still has results to enter after 11:00 AM,
+**Reopen calling** lets them add late results until the end of that day; it then closes again. **Add another date** is only for an extra congregation or a
 different venue.
 
 ## 8. Reports

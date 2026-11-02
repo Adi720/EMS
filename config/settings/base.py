@@ -4,7 +4,7 @@ All environment-specific values come from environment variables (or a local
 ``.env`` file that is never committed). See ``.env.example``.
 """
 
-from datetime import timedelta
+from datetime import time, timedelta
 from pathlib import Path
 
 import environ
@@ -137,6 +137,8 @@ ALLOCATION_CYCLE_MONTHS = env.int("ALLOCATION_CYCLE_MONTHS", default=3)
 NEW_PERIOD_MONTHS = env.int("NEW_PERIOD_MONTHS", default=6)
 # Default length of an On Hold pause (next-call date).
 ON_HOLD_MONTHS = env.int("ON_HOLD_MONTHS", default=6)
+# Calling stops at this local time on the congregation's day (24-hour HH:MM).
+CALLING_ENDS_AT = time.fromisoformat(env.str("CALLING_ENDS_AT", default="11:00"))
 # A caller is "Partially Active" when they attempted fewer than this % of their calls
 # over the last PERFORMANCE_MONTHS month(s).
 PARTIALLY_ACTIVE_BELOW = env.int("PARTIALLY_ACTIVE_BELOW", default=75)

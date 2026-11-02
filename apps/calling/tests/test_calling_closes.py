@@ -1,6 +1,6 @@
-"""Calling ends by itself once the congregation's day has passed."""
+"""Calling ends by itself at 11 AM on the congregation's day."""
 
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 import pytest
 from django.core.management import call_command
@@ -19,21 +19,21 @@ def task(make_contact, allocate, make_session, caller):
     return make_session(session_date=SUNDAY).tasks.get()
 
 
-def test_calls_work_through_sunday_and_stop_on_monday(client, caller, task, record, clock):
-    clock(SUNDAY)
-    record(task, Outcome.WILL_TRY)  # the day itself still counts
+def test_calls_work_until_sunday_11am_and_then_stop(client, caller, task, record, clock):
+    clock(SUNDAY, 10, 59)
+    record(task, Outcome.WILL_TRY)
     client.force_login(caller)
     page = client.get(reverse("core:caller_dashboard")).content.decode()
     assert "tel:" in page and 'name="outcome"' in page
+    assert "Please call by Sun 8 Nov 2026, 11:00 AM" in page
 
-    clock(SUNDAY + timedelta(days=1))
-    client.force_login(caller)  # the idle session from yesterday has expired
-    with pytest.raises(services.CallingError, match="has finished"):
+    clock(SUNDAY, 11, 0)
+    with pytest.raises(services.CallingError, match="Calling has ended"):
         record(task, Outcome.YES)  # even before anything has closed it
     response = client.post(
         reverse("calling:quick_attempt", args=[task.pk]), {"outcome": Outcome.YES}, follow=True
     )
-    assert "has finished" in response.content.decode()
+    assert "Calling has ended" in response.content.decode()
     task.refresh_from_db()
     assert task.attempt_count == 1 and task.latest_outcome == Outcome.WILL_TRY
 
@@ -54,6 +54,14 @@ def test_daily_job_closes_finished_congregations(task, clock):
     task.session.refresh_from_db()
     assert task.session.status == SessionStatus.CLOSED
     assert task.session.closed_at is not None
+
+
+def test_cut_off_time_is_a_setting(task, record, clock, settings):
+    settings.CALLING_ENDS_AT = time(18, 0)
+    clock(SUNDAY, 17, 59)
+    record(task, Outcome.YES)
+    clock(SUNDAY, 18, 0)
+    assert task.session.is_finished()
 
 
 def test_future_and_draft_congregations_stay_as_they_are(make_session, clock):
@@ -81,6 +89,21 @@ def test_reopening_allows_late_results_until_the_end_of_that_day(
     record(task, Outcome.YES)
 
     clock(monday + timedelta(days=1))
+    assert services.close_finished_sessions()[0].pk == task.session.pk
+    with pytest.raises(services.CallingError):
+        record(task, Outcome.NOT_POSSIBLE)
+
+
+def test_reopening_on_sunday_afternoon_allows_late_results_until_midnight(
+    client, coordinator, task, record, clock
+):
+    clock(SUNDAY, 16, 0)
+    services.close_finished_sessions()
+    services.open_session(task.session, coordinator)
+    assert services.close_finished_sessions() == []
+    clock(SUNDAY, 23, 59)
+    record(task, Outcome.YES)
+    clock(SUNDAY + timedelta(days=1), 0, 0)
     assert services.close_finished_sessions()[0].pk == task.session.pk
     with pytest.raises(services.CallingError):
         record(task, Outcome.NOT_POSSIBLE)
