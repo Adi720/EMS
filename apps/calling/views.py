@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -20,6 +20,7 @@ from . import services
 from .forms import AttemptForm, QuickAttemptForm, SessionForm
 from .models import (
     OUTCOME_HELP,
+    CallAttempt,
     CallTask,
     EmsSession,
     Outcome,
@@ -55,7 +56,6 @@ TASK_FILTERS = {
     "pending": Q(attempt_count=0),
     "completed": Q(attempt_count__gt=0),
     "not_connected": Q(latest_outcome=Outcome.NOT_CONNECTED),
-    "callback": Q(callback_at__isnull=False) & ~Q(latest_outcome__in=[Outcome.YES, Outcome.NOT_POSSIBLE]),
 }
 
 
@@ -94,8 +94,15 @@ class CallerDashboardView(CallerRequiredMixin, TemplateView):
         session_tasks = own.filter(session=session)
         show = self.request.GET.get("show", "")
         tasks = session_tasks.filter(TASK_FILTERS[show]) if show in TASK_FILTERS else session_tasks
-        tasks = tasks.select_related("contact").order_by(
-            "attempt_count" if show == "" else "contact__full_name", "contact__full_name"
+        latest_remark = (
+            CallAttempt.objects.filter(task_id=OuterRef("pk"))
+            .exclude(notes="")
+            .order_by("-attempted_at", "-pk")
+        )
+        tasks = (
+            tasks.select_related("contact")
+            .annotate(latest_remark=Subquery(latest_remark.values("notes")[:1]))
+            .order_by("attempt_count" if show == "" else "contact__full_name", "contact__full_name")
         )
         context.update(tasks=tasks, show=show, summary=metrics.summarize(session_tasks))
         return context
@@ -208,11 +215,14 @@ class QuickAttemptView(RoleRequiredMixin, View):
         task = get_object_or_404(visible_tasks(request.user).select_related("contact"), pk=pk)
         form = QuickAttemptForm(request.POST)
         if not form.is_valid():
-            messages.error(request, "Choose one of the four outcomes.")
+            messages.error(request, "Choose a result and keep remarks to 1000 characters or fewer.")
         else:
             try:
                 attempt = services.record_attempt(
-                    task, outcome=form.cleaned_data["outcome"], actor=request.user
+                    task,
+                    outcome=form.cleaned_data["outcome"],
+                    notes=form.cleaned_data["notes"],
+                    actor=request.user,
                 )
             except services.CallingError as exc:
                 messages.error(request, str(exc))

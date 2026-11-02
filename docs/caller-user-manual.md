@@ -62,17 +62,17 @@ kept in the history.
 
 ## 4. Remarks and call-back time
 
-Tap **Add remarks or call-back time** under a card (or tap the Saint's name) to:
-- write your remarks, e.g. *"Coming with a friend"*;
-- set a **call-back time** if they asked you to call later — it shows on the card, and the
-  **Call back** filter lists them.
+Each card has a **Remarks** box under the result buttons. Type your remarks first, e.g. *"Coming
+with a friend"*, then tap the result; both are saved together, and the last saved remark shows on
+the card.
 
-Choose the result, then tap **Save result**.
+If they asked you to call later, tap the Saint's name, choose the result, set the **Call back at**
+time and tap **Save result**.
 
 ## 5. Filters
 
 The chips under the progress bar show:
-**All** · **Pending** (not called yet) · **Done** · **Not connected** (try again) · **Call back**.
+**All** · **Pending** (not called yet) · **Done** · **Not connected** (try again).
 
 When everything is done you will see *"All calls done — thank you for your seva."*
 

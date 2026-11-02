@@ -200,8 +200,14 @@ def test_quick_attempt_and_detail_form(client, setup, make_session, caller):
     session = make_session()
     task = session.tasks.get(contact=setup["mine"][0])
     client.force_login(caller)
-    response = client.post(reverse("calling:quick_attempt", args=[task.pk]), {"outcome": "will_try"})
-    assert response.status_code == 302
+    response = client.post(
+        reverse("calling:quick_attempt", args=[task.pk]),
+        {"outcome": "will_try", "notes": "Spoke with the family"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert task.attempts.get().notes == "Spoke with the family"
+    assert b"Last saved remark:</strong> Spoke with the family" in response.content
     response = client.post(
         reverse("calling:task_detail", args=[task.pk]),
         {"outcome": "yes", "notes": "Confirmed", "callback_at": ""},

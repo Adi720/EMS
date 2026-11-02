@@ -46,7 +46,7 @@ def test_hold_after_calling_started_freezes_results(client, coordinator, caller,
         record(task, Outcome.YES)
     client.force_login(caller)
     page = client.get(reverse("core:caller_dashboard")).content.decode()
-    assert "After the call, tap the result" not in page
+    assert "tel:" not in page and 'name="outcome"' not in page
 
     services.set_week_hold(coordinator, False)
     record(task, Outcome.YES)

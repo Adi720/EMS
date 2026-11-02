@@ -24,7 +24,7 @@ def test_calls_work_through_sunday_and_stop_on_monday(client, caller, task, reco
     record(task, Outcome.WILL_TRY)  # the day itself still counts
     client.force_login(caller)
     page = client.get(reverse("core:caller_dashboard")).content.decode()
-    assert "tel:" in page and "Update the result" in page
+    assert "tel:" in page and 'name="outcome"' in page
 
     clock(SUNDAY + timedelta(days=1))
     client.force_login(caller)  # the idle session from yesterday has expired
@@ -38,7 +38,7 @@ def test_calls_work_through_sunday_and_stop_on_monday(client, caller, task, reco
     assert task.attempt_count == 1 and task.latest_outcome == Outcome.WILL_TRY
 
     page = client.get(reverse("core:caller_dashboard")).content.decode()
-    assert "tel:" not in page and "Update the result" not in page and "Calling is closed" in page
+    assert "tel:" not in page and 'name="outcome"' not in page and "Calling is closed" in page
     task.session.refresh_from_db()
     assert task.session.status == SessionStatus.CLOSED
     detail = client.get(reverse("calling:task_detail", args=[task.pk])).content.decode()

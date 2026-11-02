@@ -23,7 +23,7 @@ Saints never log in.
 | Feature | Who | Where |
 |---|---|---|
 | One-click **Start calling** for the coming Sunday — builds every caller's list and closes last week | Coordinator | Dashboard, EMS Congregations |
-| **My calls** phone screen: tap-to-call, four large result buttons, progress, filters (Pending, Done, Not connected, Call back) | Caller | My calls |
+| **My calls** phone screen: tap-to-call, four large result buttons, progress, remarks on the card, filters (Pending, Done, Not connected) | Caller | My calls |
 | Four results: **Yes**, **Not Possible**, **Will Try**, **Call Not Connected**; call again and tap again — the latest counts, all attempts are kept | Caller | My calls, call page |
 | Optional remarks and **call-back time** on any call | Caller | Call page |
 | **Raise Request**: Saint unable to attend, wrong number, another caller, I need a break, other — coordinators approve or not | Caller → Coordinator | Raise Request, Requests |
