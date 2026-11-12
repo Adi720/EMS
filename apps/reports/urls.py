@@ -7,5 +7,6 @@ app_name = "reports"
 urlpatterns = [
     path("monthly/", views.MonthlyReportView.as_view(), name="monthly"),
     path("monthly/export/", views.MonthlyExportView.as_view(), name="monthly_export"),
+    path("charts/", views.ChartsView.as_view(), name="charts"),
     path("sessions/<int:pk>/export/", views.SessionExportView.as_view(), name="session_export"),
 ]

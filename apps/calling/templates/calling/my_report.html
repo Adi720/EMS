@@ -38,7 +38,7 @@
             {% endfor %}
           </div>
         </div>
-        <div class="ems-colchart__labels" aria-hidden="true">
+        <div class="ems-colchart__labels{% if weeks|length > 7 %} ems-colchart__labels--dense{% endif %}" aria-hidden="true">
           {% for w in weeks %}<span>{{ w.session_obj.session_date|date:"j M" }}</span>{% endfor %}
         </div>
       </div>

@@ -1019,7 +1019,8 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
 .ems-colchart__col:last-child:hover::after, .ems-colchart__col:last-child:focus-visible::after { left: auto; right: 0; transform: none; }
 .ems-colchart__labels { display: flex; gap: 2px; margin-left: 2.25rem; margin-top: 0.3rem; }
 .ems-colchart__labels span { flex: 1 1 0; text-align: center; font-size: 0.68rem; color: var(--ems-muted); white-space: nowrap; overflow: hidden; }
-@media (max-width: 575.98px) { .ems-colchart__labels span:nth-child(even) { visibility: hidden; } }
+/* Many weeks on a phone: label every other week so dates don't run together. */
+@media (max-width: 575.98px) { .ems-colchart__labels--dense span:nth-child(even) { visibility: hidden; } }
 
 /* Caller tab bar on phones */
 .ems-tabbar {
@@ -1042,3 +1043,41 @@ details > summary { cursor: pointer; color: var(--ems-muted); }
   width: 56px; height: 56px; margin: 0 auto 0.75rem; display: grid; place-items: center;
   border-radius: 50%; background: var(--ems-accent-soft); color: var(--ems-accent-text); font-size: 1.6rem;
 }
+
+/* ---- Charts page -------------------------------------------------------------- */
+
+/* One colour per answer; the same colour means the same thing in every chart. */
+.ems-c-yes, .ems-c-active { color: var(--ems-chart-yes); }
+.ems-c-not_possible, .ems-c-on_hold { color: var(--ems-chart-no); }
+.ems-c-will_try, .ems-c-new { color: var(--ems-chart-try); }
+.ems-c-not_connected { color: var(--ems-chart-nc); }
+.ems-c-unknown, .ems-c-not_called, .ems-c-inactive { color: var(--ems-chart-track); }
+
+.ems-ring-wrap { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 1.25rem; align-items: center; }
+@media (max-width: 359.98px) { .ems-ring-wrap { grid-template-columns: 1fr; justify-items: center; } }
+.ems-ring { position: relative; width: 150px; height: 150px; }
+.ems-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ems-ring__seg { fill: none; stroke: currentColor; stroke-width: 6; transition: stroke-width 0.15s ease; }
+.ems-ring__seg:hover { stroke-width: 7.5; }
+.ems-ring__centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+.ems-ring__total { font-size: 1.6rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ems-ring__caption { font-size: 0.72rem; color: var(--ems-muted); }
+
+.ems-legend-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.ems-legend-list li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; font-size: 0.875rem; }
+.ems-legend-list strong { font-variant-numeric: tabular-nums; }
+.ems-legend-list .ems-muted { font-weight: 400; margin-left: 0.25rem; }
+.ems-swatch { width: 12px; height: 12px; border-radius: 3px; background: currentColor; }
+.ems-swatch.ems-c-unknown, .ems-swatch.ems-c-not_called, .ems-swatch.ems-c-inactive { box-shadow: inset 0 0 0 1px var(--ems-border-strong); }
+
+.ems-legend-inline { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.78rem; color: var(--ems-muted); }
+.ems-legend-inline span { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+/* Per-caller result bar: segments separated by a 2px surface gap, rounded ends */
+.ems-split { display: flex; gap: 2px; height: 12px; border-radius: 4px; overflow: hidden; }
+.ems-split > span { background: currentColor; min-width: 3px; }
+.ems-split-row { padding: 0.65rem 0; }
+.ems-split-row + .ems-split-row { border-top: 1px solid var(--ems-border); }
+
+.ems-colchart--charts .ems-colchart__bar { background: var(--ems-chart); }
+.ems-colchart--yes .ems-colchart__bar { background: var(--ems-chart-yes); }

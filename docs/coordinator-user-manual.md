@@ -21,7 +21,7 @@ Once a day after logging in, a short message reminds you to do Simran before sta
 tap **Begin Sewa**.
 
 - **Left menu** (on a phone: tap ☰): Dashboard · EMS Congregations · Requests · Saints ·
-  Calling Team · Performance · Assignments · Reports · Audit log · Import. If you also make calls,
+  Calling Team · Performance · Assignments · Reports · Charts · Audit log · Import. If you also make calls,
   **My calls**, **My Report** and **Raise Request** appear too.
 - **Top right:** 🌙/☀️ switches light and dark theme; your name opens **Change password** and
   **Log out**.
@@ -191,6 +191,20 @@ different venue.
 eight numbers, overall completion, and tables by congregation and by caller. **Export** downloads
 Excel or CSV of what is on screen.
 
+**Charts** (menu, or **View charts** on Reports) shows the same period as pictures, one card per
+chart, easy to read on a phone:
+
+| Chart | Shows |
+|---|---|
+| Results of the calls (ring) | Yes, Not Possible, Will Try, Call Not Connected (tried, no answer) and Calls Not Made, with the total in the middle |
+| Saints by status (ring) | New, Active, On Hold and Inactive today |
+| Calls made each week | % of calls made each week, with the 75% goal line (Monthly and 3 Months) |
+| Saints who said Yes, each week | The number of Yes each week (Monthly and 3 Months) |
+| Results by caller | One bar per caller, best first |
+
+Tap or hover any part for its numbers; each ring also lists its numbers beside it. **View numbers**
+goes back to the tables.
+
 | Number | Meaning |
 |---|---|
 | Assigned | Calls on the lists |
@@ -198,7 +212,7 @@ Excel or CSV of what is on screen.
 | Not yet attempted | Not called |
 | Connected | Yes, Not Possible or Will Try |
 | Yes / Not Possible / Will Try | The latest result |
-| Unknown | Not called yet, or Call Not Connected |
+| Unknown | Calls Not Made, or Call Not Connected |
 
 Yes + Not Possible + Will Try + Unknown always equals Assigned. **Will Try is never counted as
 Yes.** Actual attendance on Sunday is not recorded.

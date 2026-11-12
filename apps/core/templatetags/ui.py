@@ -15,6 +15,7 @@ SECTIONS = {
     "allocations": "Assignments",
     "calling": "EMS Congregations",
     "reports": "Reports",
+    "reports:charts": "Charts",
     "imports": "Import",
     "audit": "Audit log",
     "caller_requests": "Requests",

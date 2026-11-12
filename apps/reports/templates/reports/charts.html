@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Charts{% endblock %}
+{% block content %}
+<div class="ems-page-header">
+  <div class="min-w-0">
+    <div class="ems-eyebrow mb-1">Charts</div>
+    <h1 class="ems-page-title">{{ title }}</h1>
+    <p class="ems-page-subtitle">{{ session_count }} congregation{{ session_count|pluralize }} · {{ summary.assigned }} call{{ summary.assigned|pluralize }} given</p>
+  </div>
+  <div class="ems-page-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'reports:monthly' %}?{{ querystring }}">{% icon "table" %}View numbers</a>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+  <div class="btn-group" role="group" aria-label="Period">
+    {% for value, label in periods %}<a class="btn {% if value == period %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?period={{ value }}"{% if value == period %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </div>
+  {% if period == "month" %}
+  <form method="get" class="d-flex gap-2 align-items-end">
+    <input type="hidden" name="period" value="month">
+    <label class="visually-hidden" for="month">Month</label><input class="form-control" type="month" id="month" name="month" value="{{ month_value }}">
+    <button class="btn btn-outline-secondary">Show</button>
+  </form>
+  {% elif period == "week" and week_choices %}
+  <form method="get" class="d-flex gap-2 align-items-end">
+    <input type="hidden" name="period" value="week">
+    <label class="visually-hidden" for="week">Congregation</label>
+    <select class="form-select" id="week" name="week" onchange="this.form.submit()">{% for s in week_choices %}<option value="{{ s.session_date|date:'Y-m-d' }}"{% if s.session_date == month_start %} selected{% endif %}>{{ s.label }}</option>{% endfor %}</select>
+    <noscript><button class="btn btn-outline-secondary">Show</button></noscript>
+  </form>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  {# 1. Results of the calls #}
+  <div class="col-lg-6">
+    <section class="card h-100" aria-labelledby="results-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="results-title">Results of the calls</h2></div>
+      <div class="card-body">
+        {% if results_ring.total %}
+          {% include "reports/ring.html" with ring=results_ring caption="calls" label="Results of the calls" only %}
+          <p class="small ems-muted mt-3 mb-0">{{ summary.completed }} of {{ summary.assigned }} calls made ({{ summary.completion_rate|default:0 }}%). Call Not Connected = tried, but no answer, switched off or busy; worth trying again. Will Try is never counted as Yes.</p>
+        {% else %}
+          {% include "includes/ui/empty_state.html" with icon="pie-chart" title="No calls in this period" text="Choose another period above." only %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  {# 2. Saints by status (today, whatever the period) #}
+  <div class="col-lg-6">
+    <section class="card h-100" aria-labelledby="status-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="status-title">Saints by status</h2><span class="small ems-muted">today</span></div>
+      <div class="card-body">
+        {% if status_ring.total %}
+          {% include "reports/ring.html" with ring=status_ring caption="Saints" label="Saints by status" only %}
+          <p class="small ems-muted mt-3 mb-0">New and Active Saints are called every week.</p>
+        {% else %}
+          {% include "includes/ui/empty_state.html" with icon="people" title="No Saints yet" text="Import the workbook or add Saints." only %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  {% if weeks %}
+  {# 3. Calls made each week #}
+  <div class="col-lg-6">
+    <section class="card h-100" aria-labelledby="made-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="made-title">Calls made each week</h2><span class="small ems-muted">goal 75%</span></div>
+      <div class="card-body">
+        <div class="ems-colchart ems-colchart--charts" role="img" aria-label="Percentage of calls made each week; the numbers are on the Reports page.">
+          <div class="ems-colchart__plot">
+            <div class="ems-colchart__grid" style="bottom: 100%"><span>100%</span></div>
+            <div class="ems-colchart__grid" style="bottom: 50%"><span>50%</span></div>
+            <div class="ems-colchart__grid ems-colchart__grid--base" style="bottom: 0"><span>0</span></div>
+            <div class="ems-colchart__goal" style="bottom: 75%"></div>
+            <div class="ems-colchart__cols">
+              {% for c in weeks.made %}
+              <div class="ems-colchart__col" tabindex="0" data-tip="{{ c.tip }}" aria-label="{{ c.tip }}">
+                <span class="ems-colchart__bar" style="height: {{ c.height }}%"></span>
+                {% if forloop.last %}<span class="ems-colchart__value" style="bottom: {{ c.height }}%">{{ c.value }}</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="ems-colchart__labels{% if weeks.made|length > 7 %} ems-colchart__labels--dense{% endif %}" aria-hidden="true">{% for c in weeks.made %}<span>{{ c.day|date:"j M" }}</span>{% endfor %}</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  {# 4. Yes each week (its own chart: a count, not a percentage) #}
+  <div class="col-lg-6">
+    <section class="card h-100" aria-labelledby="yes-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="yes-title">Saints who said Yes, each week</h2></div>
+      <div class="card-body">
+        <div class="ems-colchart ems-colchart--yes" role="img" aria-label="Number of Yes answers each week; the numbers are on the Reports page.">
+          <div class="ems-colchart__plot">
+            <div class="ems-colchart__grid" style="bottom: 100%"><span>{{ weeks.yes_top }}</span></div>
+            <div class="ems-colchart__grid" style="bottom: 50%"><span>{{ weeks.yes_mid }}</span></div>
+            <div class="ems-colchart__grid ems-colchart__grid--base" style="bottom: 0"><span>0</span></div>
+            <div class="ems-colchart__cols">
+              {% for c in weeks.yes %}
+              <div class="ems-colchart__col" tabindex="0" data-tip="{{ c.tip }}" aria-label="{{ c.tip }}">
+                <span class="ems-colchart__bar" style="height: {{ c.height }}%"></span>
+                {% if forloop.last %}<span class="ems-colchart__value" style="bottom: {{ c.height }}%">{{ c.value }}</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="ems-colchart__labels{% if weeks.yes|length > 7 %} ems-colchart__labels--dense{% endif %}" aria-hidden="true">{% for c in weeks.yes %}<span>{{ c.day|date:"j M" }}</span>{% endfor %}</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  {% endif %}
+
+  {# 5. Results by caller, best first #}
+  {% if caller_bars %}
+  <div class="col-12">
+    <section class="card" aria-labelledby="callers-title">
+      <div class="ems-card-header"><h2 class="ems-section-title" id="callers-title">Results by caller</h2><span class="small ems-muted">best first</span></div>
+      <div class="card-body pt-2">
+        <div class="ems-legend-inline mb-2" aria-hidden="true">
+          <span><i class="ems-swatch ems-c-yes"></i>Yes</span><span><i class="ems-swatch ems-c-not_possible"></i>Not Possible</span><span><i class="ems-swatch ems-c-will_try"></i>Will Try</span><span><i class="ems-swatch ems-c-not_connected"></i>Call Not Connected</span><span><i class="ems-swatch ems-c-not_called"></i>Calls Not Made</span>
+        </div>
+        {% for b in caller_bars %}
+        <div class="ems-split-row">
+          <div class="d-flex justify-content-between gap-2 small mb-1">
+            <strong class="text-truncate">{{ forloop.counter }}. {{ b.caller }}</strong>
+            <span class="ems-muted text-nowrap">{{ b.completed }}/{{ b.assigned }} made ({{ b.rate }}%) · {{ b.yes }} Yes</span>
+          </div>
+          <div class="ems-split" role="img" aria-label="{{ b.caller }}: {% for p in b.parts %}{{ p.label }} {{ p.value }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+            {% for p in b.parts %}<span class="ems-c-{{ p.key }}" style="flex: 0 0 calc({{ p.width|floatformat:2 }}% - 2px)" title="{{ p.label }}: {{ p.value }}"></span>{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+  {% endif %}
+</div>
+<p class="small ems-muted mt-3">Tap or hover a chart for its numbers. Every figure is also on the <a href="{% url 'reports:monthly' %}?{{ querystring }}">Reports</a> page.</p>
+{% endblock %}

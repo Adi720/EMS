@@ -1,0 +1,14 @@
+{# A ring (pie) chart with its legend. `ring` comes from apps.reports.charts.ring. #}
+<div class="ems-ring-wrap">
+  <div class="ems-ring" role="img" aria-label="{{ label }}: {% for s in ring.segments %}{{ s.label }} {{ s.value }} ({{ s.pct }}%){% if not forloop.last %}, {% endif %}{% endfor %}">
+    <svg viewBox="0 0 42 42" aria-hidden="true">
+      {% for s in ring.segments %}{% if s.value %}<circle class="ems-ring__seg ems-c-{{ s.key }}" cx="21" cy="21" r="15.9155" stroke-dasharray="{{ s.dash }}" stroke-dashoffset="{{ s.offset }}"><title>{{ s.label }}: {{ s.value }} ({{ s.pct }}%)</title></circle>{% endif %}{% endfor %}
+    </svg>
+    <div class="ems-ring__centre"><span class="ems-ring__total">{{ ring.total }}</span><span class="ems-ring__caption">{{ caption }}</span></div>
+  </div>
+  <ul class="ems-legend-list">
+    {% for s in ring.segments %}
+    <li><i class="ems-swatch ems-c-{{ s.key }}" aria-hidden="true"></i><span>{{ s.label }}</span><strong>{{ s.value }}<span class="ems-muted">{{ s.pct }}%</span></strong></li>
+    {% endfor %}
+  </ul>
+</div>

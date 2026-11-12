@@ -28,6 +28,12 @@
   --ems-accent-hover: #0b5f59;
   --ems-accent-soft: #e6f4f2;
   --ems-chart: #0d9488;         /* chart bars; validated (dataviz) on the light surface */
+  /* Charts page: three answers validated as a colour-blind-safe set; "no answer" is a track. */
+  --ems-chart-yes: #1baf7a;
+  --ems-chart-no: #eb6834;
+  --ems-chart-try: #2a78d6;
+  --ems-chart-nc: #eda100;
+  --ems-chart-track: #dde2e8;
   --ems-accent-text: #0b5f59;
   --ems-on-accent: #ffffff;
 
@@ -83,6 +89,11 @@
   --ems-accent-hover: #2dd4bf;
   --ems-accent-soft: rgba(20, 184, 166, 0.14);
   --ems-chart: #11a698;         /* validated on the dark surface */
+  --ems-chart-yes: #199e70;
+  --ems-chart-no: #d95926;
+  --ems-chart-try: #3987e5;
+  --ems-chart-nc: #c98500;
+  --ems-chart-track: #2b323c;
   --ems-accent-text: #5eead4;
   --ems-on-accent: #04201d;
 

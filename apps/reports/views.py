@@ -20,7 +20,7 @@ from apps.core.dates import add_months
 from apps.core.exports import export_response
 from apps.core.permissions import CoordinatorRequiredMixin
 
-from . import metrics
+from . import charts, metrics
 from .overview import build_overview
 
 
@@ -167,6 +167,23 @@ class MonthlyReportView(CoordinatorRequiredMixin, TemplateView):
         params = self.request.GET.copy()
         params.pop("format", None)
         context["querystring"] = params.urlencode()
+        return context
+
+
+class ChartsView(CoordinatorRequiredMixin, TemplateView):
+    """The same periods as Reports, drawn as charts for reading on a phone."""
+
+    template_name = "reports/charts.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**monthly_data(self.request.GET), **kwargs)
+        summary = context["summary"]
+        context["results_ring"] = charts.ring(charts.result_parts(summary))
+        context["status_ring"] = charts.ring(saints_by_status())
+        weeks = context["by_session"]
+        context["weeks"] = charts.week_columns(weeks) if context["period"] != "week" and weeks else None
+        context["caller_bars"] = charts.caller_bars(context["by_caller"])
+        context["querystring"] = self.request.GET.urlencode()
         return context
 
 

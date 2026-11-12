@@ -9,6 +9,7 @@
     <p class="ems-page-subtitle">{{ session_count }} congregation{{ session_count|pluralize }} · {{ unique_yes }} different Saint{{ unique_yes|pluralize }} said Yes</p>
   </div>
   <div class="ems-page-actions">
+    <a class="btn btn-outline-secondary" href="{% url 'reports:charts' %}?{{ querystring }}">{% icon "pie-chart" %}View charts</a>
     <div class="dropdown">
       <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{% icon "download" %}Export</button>
       <ul class="dropdown-menu dropdown-menu-end">

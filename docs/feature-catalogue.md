@@ -74,6 +74,7 @@ Saints never log in.
 | Feature | Who | Where |
 |---|---|---|
 | **Reports** — **Weekly**, **Monthly** or **3 Months** (week by week), by congregation and by caller, export to Excel / CSV | Coordinator | Reports |
+| **Charts** — ring charts of call results and Saints by status, weekly trends of calls made and Yes, results by caller; same periods as Reports, built for phones and colour-blind safe | Coordinator | Charts |
 | Congregation results and call list export | Coordinator | Congregation page → Export |
 | **Audit log** in plain language, filter by activity, person and date; cannot be edited | Coordinator | Audit log |
 

@@ -35,8 +35,9 @@
     </div>
     <div class="ems-nav__group">
       <div class="ems-nav__label">Insights</div>
-      {% nav_is_active "reports" as on %}
-      <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'reports:monthly' %}"{% if on %} aria-current="page"{% endif %}>{% icon "bar-chart-line" %}<span>Reports</span></a>
+      {% nav_is_active "reports" as on %}{% nav_is_active "reports:charts" as on_charts %}
+      <a class="ems-nav__link{% if on and not on_charts %} active{% endif %}" href="{% url 'reports:monthly' %}"{% if on and not on_charts %} aria-current="page"{% endif %}>{% icon "table" %}<span>Reports</span></a>
+      <a class="ems-nav__link{% if on_charts %} active{% endif %}" href="{% url 'reports:charts' %}"{% if on_charts %} aria-current="page"{% endif %}>{% icon "pie-chart" %}<span>Charts</span></a>
       {% nav_is_active "audit" as on %}
       <a class="ems-nav__link{% if on %} active{% endif %}" href="{% url 'audit:event_list' %}"{% if on %} aria-current="page"{% endif %}>{% icon "clock-history" %}<span>Audit log</span></a>
     </div>
